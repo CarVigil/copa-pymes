@@ -1,0 +1,64 @@
+# Dependencias
+node_modules/
+*/node_modules/
+
+# Archivos de configuración local
+.env
+*.env.local
+*.env.development.local
+*.env.test.local
+*.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Base de datos
+*.sqlite
+*.sqlite3
+*.db
+
+# Archivos compilados
+dist/
+build/
+*/dist/
+*/build/
+
+# Archivos temporales
+.DS_Store
+.vscode/
+.idea/
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
