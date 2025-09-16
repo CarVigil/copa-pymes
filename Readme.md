@@ -9,7 +9,7 @@ Sistema completo con Node.js, React, TypeScript y MikroORM.
 - **Express.js** - Framework web
 - **TypeScript** - Tipado estático
 - **MikroORM** - ORM para base de datos
-- **SQLite** - Base de datos
+- **SQL** - Base de datos
 
 ### Frontend
 - **React** v18 con TypeScript
