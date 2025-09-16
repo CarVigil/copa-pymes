@@ -6,12 +6,14 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "nodemon --exec ts-node src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "startBack": "npm run build && npm run dev"
   },
   "dependencies": {
-    "@mikro-orm/cli": "^6.5.2",
-    "@mikro-orm/core": "^6.5.2",
-    "@mikro-orm/sqlite": "^6.5.2",
+    "@mikro-orm/cli": "6.5.2",
+    "@mikro-orm/core": "6.5.2",
+    "@mikro-orm/mysql": "6.5.2",
+    "@mikro-orm/sql-highlighter": "^1.0.1",
     "cors": "^2.8.5",
     "express": "^4.18.2"
   },
@@ -21,6 +23,7 @@
     "@types/node": "^20.10.5",
     "nodemon": "^3.0.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.19.0",
     "typescript": "^5.3.3"
   }
 }

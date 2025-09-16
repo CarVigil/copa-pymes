@@ -1,13 +1,11 @@
-const express = require('express');
-const cors = require('cors');
-const { MikroORM, RequestContext } = require('@mikro-orm/core');
-const config = require('./mikro-orm.config');
-const { User } = require('./entities/User');
+import express from 'express';
+import cors from 'cors';
+import { MikroORM, RequestContext } from '@mikro-orm/core';
+import { initializeORM, getORM } from './shared/db/mikro-orm.config';
+import jugadorRoutes from './routes/jugador.routes';
 
 const app = express();
-const PORT = 3001;
-
-let orm: any;
+const PORT = 3000;
 
 // Middlewares
 app.use(cors());
@@ -15,99 +13,100 @@ app.use(express.json());
 
 // Middleware para MikroORM
 app.use((req: any, res: any, next: any) => {
-  RequestContext.create(orm.em, next);
+  RequestContext.create(getORM().em, next);
 });
 
 // Rutas
 app.get('/api/health', (req: any, res: any) => {
   res.json({ 
     message: 'Backend funcionando correctamente!',
-    database: 'Conectado a SQLite',
+    database: 'Conectado a SQL',
     timestamp: new Date().toISOString()
   });
 });
 
-// Ruta para obtener usuarios
-app.get('/api/users', async (req: any, res: any) => {
+// Rutas de jugadores
+app.use('/api/jugadores', jugadorRoutes);
+
+
+
+// Función para cerrar conexiones de base de datos
+const closeDatabase = async () => {
   try {
-    const users = await orm.em.find(User, {});
-    res.json({
-      success: true,
-      data: users,
-      count: users.length
-    });
+    const orm = getORM();
+    console.log('🔄 Cerrando conexiones de base de datos...');
+    await orm.close();
+    console.log('✅ Conexiones de base de datos cerradas');
   } catch (error) {
-    console.error('Error obteniendo usuarios:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error obteniendo usuarios'
-    });
+    console.log('ℹ️ Base de datos ya cerrada o no inicializada');
   }
+};
+
+// Manejadores de señales para cerrar conexiones
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Señal SIGINT recibida. Cerrando servidor...');
+  await closeDatabase();
+  process.exit(0);
 });
 
-// Ruta para crear usuario
-app.post('/api/users', async (req: any, res: any) => {
-  try {
-    const { name, email, password } = req.body;
-    
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Nombre, email y contraseña son requeridos'
-      });
-    }
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Señal SIGTERM recibida. Cerrando servidor...');
+  await closeDatabase();
+  process.exit(0);
+});
 
-    const user = new User();
-    user.name = name;
-    user.email = email;
-    user.password = password; // En producción, hashear la contraseña
+process.on('exit', async () => {
+  console.log('🛑 Proceso terminando...');
+});
 
-    await orm.em.persistAndFlush(user);
+// Manejar errores no capturados
+process.on('uncaughtException', async (error) => {
+  console.error('❌ Error no capturado:', error);
+  await closeDatabase();
+  process.exit(1);
+});
 
-    res.status(201).json({
-      success: true,
-      message: 'Usuario creado exitosamente',
-      data: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        createdAt: user.createdAt
-      }
-    });
-  } catch (error: any) {
-    console.error('Error creando usuario:', error);
-    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-      return res.status(400).json({
-        success: false,
-        message: 'El email ya está registrado'
-      });
-    }
-    res.status(500).json({
-      success: false,
-      message: 'Error creando usuario'
-    });
-  }
+process.on('unhandledRejection', async (reason, promise) => {
+  console.error('❌ Promesa rechazada no manejada:', reason);
+  await closeDatabase();
+  process.exit(1);
 });
 
 // Inicializar aplicación
 const init = async () => {
   try {
     console.log('🔄 Conectando a la base de datos...');
-    orm = await MikroORM.init(config);
+    const orm = await initializeORM();
     
     console.log('🔄 Actualizando esquema de base de datos...');
     await orm.getSchemaGenerator().updateSchema();
     
     console.log('✅ Base de datos configurada correctamente');
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
-      console.log(`🔍 API Health: http://localhost:${PORT}/api/health`);
-      console.log(`👥 API Users: http://localhost:${PORT}/api/users`);
-      console.log(`📊 Base de datos: SQLite (database.sqlite)`);
+      console.log(`📊 Base de datos: MySQL (Cloud)`);
+      console.log('💡 Presiona Ctrl+C para cerrar el servidor');
     });
+
+    // Manejar cierre del servidor
+    process.on('SIGINT', () => {
+      console.log('\n🔄 Cerrando servidor HTTP...');
+      server.close(() => {
+        console.log('✅ Servidor HTTP cerrado');
+      });
+    });
+
+    process.on('SIGTERM', () => {
+      console.log('\n🔄 Cerrando servidor HTTP...');
+      server.close(() => {
+        console.log('✅ Servidor HTTP cerrado');
+      });
+    });
+
   } catch (error) {
     console.error('❌ Error inicializando la aplicación:', error);
+    await closeDatabase();
     process.exit(1);
   }
 };
