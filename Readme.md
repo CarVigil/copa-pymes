@@ -64,12 +64,12 @@ DB_NAME=database.sqlite
 **Terminal 1 - Backend:**
 ```bash
 cd backend-copa-pymes
-npm run dev
+npm run startBack
 ```
 
 **Terminal 2 - Frontend:**
 ```bash
-cd frontend
+cd frontend-copa-pymes
 npm start
 ```
 
