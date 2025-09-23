@@ -28,3 +28,39 @@ export interface CreateJugadorRequest {
   email: string;
   fecha_nacimiento: Date;
 }
+
+export interface UpdateJugadorRequest {
+  nombre?: string;
+  apellido?: string;
+  dni?: string;
+  email?: string;
+  fecha_nacimiento?: Date;
+}
+
+export interface Torneo {
+  id?: number;
+  nombre: string;
+  tipo: string;
+  modalidad: string;
+  fecha_inicio: Date;
+  fecha_fin: Date;
+}
+
+export interface CreateTorneoRequest {
+  nombre: string;
+  tipo: string;
+  modalidad: string;
+  fecha_inicio: Date;
+  fecha_fin: Date;
+}
+
+export interface UpdateTorneoRequest {
+  nombre?: string;
+  tipo?: string;
+  modalidad?: string;
+  fecha_inicio?: Date;
+  fecha_fin?: Date;
+}
+
+
+

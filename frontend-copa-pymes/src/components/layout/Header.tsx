@@ -1,35 +1,47 @@
-import React from 'react';
-import './Header.css';
+import React from "react";
+import "./Header.css";
 
 interface HeaderProps {
   title?: string;
   onNavigateHome?: () => void;
   onNavigateJugadores?: () => void;
+  onNavigateTorneos?: () => void;
   currentPage?: string;
 }
 
-export const Header: React.FC<HeaderProps> = ({ 
-  title = 'Copa Pymes', 
+export const Header: React.FC<HeaderProps> = ({
+  title = "Copa Pymes",
   onNavigateHome,
   onNavigateJugadores,
-  currentPage 
+  onNavigateTorneos,
+  currentPage,
 }) => {
   return (
     <header className="header">
       <div className="header-container">
         <h1 className="header-title">{title}</h1>
         <nav className="header-nav">
-          <button 
-            className={`nav-button ${currentPage === 'home' ? 'active' : ''}`}
+          <button
+            className={`nav-button ${currentPage === "home" ? "active" : ""}`}
             onClick={onNavigateHome}
           >
             Inicio
           </button>
-          <button 
-            className={`nav-button ${currentPage === 'jugadores' ? 'active' : ''}`}
+          <button
+            className={`nav-button ${
+              currentPage === "jugadores" ? "active" : ""
+            }`}
             onClick={onNavigateJugadores}
           >
             Jugadores
+          </button>
+          <button
+            className={`nav-button ${
+              currentPage === "torneos" ? "active" : ""
+            }`}
+            onClick={onNavigateTorneos}
+          >
+            Torneos
           </button>
           <button className="nav-button">Partidos</button>
           <button className="nav-button">Resultados</button>
