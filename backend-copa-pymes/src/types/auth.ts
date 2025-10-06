@@ -1,3 +1,5 @@
+import { UsuarioRole } from '../models/usuario.model';
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -11,7 +13,11 @@ export interface LoginResponse {
       email: string;
       nombre: string;
       apellido: string;
-      role: string;
+      role: UsuarioRole;
+      documento?: string;
+      telefono?: string;
+      posicion?: string;
+      numero_camiseta?: number;
     };
     token: string;
     expiresIn: string;
@@ -24,13 +30,18 @@ export interface RegisterRequest {
   password: string;
   nombre: string;
   apellido: string;
-  role?: 'admin' | 'jugador';
+  role?: UsuarioRole;
+  documento?: string;
+  telefono?: string;
+  fecha_nacimiento?: string;
+  posicion?: string;
+  numero_camiseta?: number;
 }
 
 export interface JWTPayload {
   id: number;
   email: string;
-  role: string;
+  role: UsuarioRole;
   iat?: number;
   exp?: number;
 }

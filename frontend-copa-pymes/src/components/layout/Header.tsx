@@ -1,4 +1,5 @@
 import React from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import "./Header.css";
 
 interface HeaderProps {
@@ -16,6 +17,13 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateTorneos,
   currentPage,
 }) => {
+  const { user, logout, isAdmin } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    // La aplicación se redirigirá automáticamente al login
+  };
+
   return (
     <header className="header">
       <div className="header-container">
@@ -45,6 +53,16 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button className="nav-button">Partidos</button>
           <button className="nav-button">Resultados</button>
+          
+          {/* Información del usuario y logout */}
+          <div className="user-section">
+            <span className="user-info">
+              {user?.nombre} ({isAdmin ? 'Admin' : 'Jugador'})
+            </span>
+            <button className="nav-button logout-button" onClick={handleLogout}>
+              Cerrar Sesión
+            </button>
+          </div>
         </nav>
       </div>
     </header>
