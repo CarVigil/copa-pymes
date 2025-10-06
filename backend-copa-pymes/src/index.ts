@@ -3,6 +3,7 @@ import cors from 'cors';
 import { MikroORM, RequestContext } from '@mikro-orm/core';
 import { initializeORM, getORM } from './shared/db/mikro-orm.config';
 import jugadorRoutes from './routes/jugador.routes';
+import torneoRoutes from './routes/torneo.routes';
 
 const app = express();
 const PORT = 3000;
@@ -25,8 +26,39 @@ app.get('/api/health', (req: any, res: any) => {
   });
 });
 
+// Endpoint temporal para probar conexión con torneos
+app.get('/api/test-torneos', async (req: any, res: any) => {
+  try {
+    const orm = getORM();
+    const em = orm.em.fork();
+    
+    // Probar consulta directa
+    const count = await em.getConnection().execute('SELECT COUNT(*) as total FROM torneo');
+    const torneos = await em.getConnection().execute('SELECT * FROM torneo LIMIT 5');
+    
+    res.json({
+      success: true,
+      message: 'Conexión con tabla torneos exitosa',
+      data: {
+        count: count[0],
+        sample: torneos
+      }
+    });
+  } catch (error: any) {
+    console.error('Error en test-torneos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error conectando con torneos',
+      error: error.message
+    });
+  }
+});
+
 // Rutas de jugadores
 app.use('/api/jugadores', jugadorRoutes);
+
+// Rutas de torneos
+app.use('/api/torneos', torneoRoutes);
 
 
 
@@ -72,42 +104,60 @@ process.on('unhandledRejection', async (reason, promise) => {
   process.exit(1);
 });
 
-// Inicializar aplicación
+// Inicializar aplicación con reintentos
 const init = async () => {
-  try {
-    console.log('🔄 Conectando a la base de datos...');
-    const orm = await initializeORM();
-    
-    console.log('🔄 Actualizando esquema de base de datos...');
-    await orm.getSchemaGenerator().updateSchema();
-    
-    console.log('✅ Base de datos configurada correctamente');
+  let retries = 0;
+  const maxRetries = 5;
+  const retryDelay = 5000; // 5 segundos
 
-    const server = app.listen(PORT, () => {
-      console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
-      console.log(`📊 Base de datos: MySQL (Cloud)`);
-      console.log('💡 Presiona Ctrl+C para cerrar el servidor');
-    });
+  while (retries < maxRetries) {
+    try {
+      console.log(`🔄 Conectando a la base de datos... (Intento ${retries + 1}/${maxRetries})`);
+      const orm = await initializeORM();
+      
+      // Probar la conexión
+      await orm.em.getConnection().execute('SELECT 1');
+      
+      console.log('🔄 Actualizando esquema de base de datos...');
+      await orm.getSchemaGenerator().updateSchema();
+      
+      console.log('✅ Base de datos configurada correctamente');
 
-    // Manejar cierre del servidor
-    process.on('SIGINT', () => {
-      console.log('\n🔄 Cerrando servidor HTTP...');
-      server.close(() => {
-        console.log('✅ Servidor HTTP cerrado');
+      const server = app.listen(PORT, () => {
+        console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+        console.log(`📊 Base de datos: MySQL (Cloud)`);
+        console.log('💡 Presiona Ctrl+C para cerrar el servidor');
       });
-    });
 
-    process.on('SIGTERM', () => {
-      console.log('\n🔄 Cerrando servidor HTTP...');
-      server.close(() => {
-        console.log('✅ Servidor HTTP cerrado');
-      });
-    });
+      // Manejar cierre del servidor
+      const gracefulShutdown = async () => {
+        console.log('\n🔄 Cerrando servidor HTTP...');
+        server.close(async () => {
+          console.log('✅ Servidor HTTP cerrado');
+          await closeDatabase();
+          process.exit(0);
+        });
+      };
 
-  } catch (error) {
-    console.error('❌ Error inicializando la aplicación:', error);
-    await closeDatabase();
-    process.exit(1);
+      process.on('SIGINT', gracefulShutdown);
+      process.on('SIGTERM', gracefulShutdown);
+
+      // Si llegamos aquí, la inicialización fue exitosa
+      return;
+
+    } catch (error: any) {
+      retries++;
+      console.error(`❌ Error conectando a la base de datos (Intento ${retries}/${maxRetries}):`, error.message);
+      
+      if (retries >= maxRetries) {
+        console.error('❌ Máximo número de reintentos alcanzado. Cerrando aplicación.');
+        await closeDatabase();
+        process.exit(1);
+      }
+      
+      console.log(`⏳ Reintentando en ${retryDelay / 1000} segundos...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
   }
 };
 

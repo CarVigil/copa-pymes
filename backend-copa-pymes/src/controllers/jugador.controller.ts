@@ -1,18 +1,62 @@
 import { Request, Response } from 'express';
-import { getORM } from '../shared/db/mikro-orm.config';
+import { getORM, checkConnection } from '../shared/db/mikro-orm.config';
 import { Jugador } from '../models/jugador.model';
+
+// Función auxiliar para reintentar operaciones con base de datos
+const retryDatabaseOperation = async <T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delay: number = 2000
+): Promise<T> => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Verificar conexión antes de intentar la operación
+      const isConnected = await checkConnection();
+      if (!isConnected) {
+        throw new Error('No hay conexión a la base de datos');
+      }
+
+      return await operation();
+    } catch (error: any) {
+      console.error(`❌ Intento ${attempt}/${maxRetries} falló:`, error.message);
+      
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Solo reintentar en errores de conexión/timeout
+      if (error.code === 'ETIMEDOUT' || 
+          error.code === 'ECONNRESET' || 
+          error.code === 'ENOTFOUND' ||
+          error.message.includes('connect') ||
+          error.message.includes('timeout')) {
+        console.log(`⏳ Reintentando en ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        // Incrementar el delay para el siguiente intento
+        delay *= 1.5;
+        continue;
+      }
+      
+      throw error;
+    }
+  }
+  throw new Error('No se pudo completar la operación después de múltiples intentos');
+};
 
 export class JugadorController {
   // Obtener todos los jugadores
   static async getAll(req: Request, res: Response): Promise<void> {
     try {
-      const orm = getORM();
-      const em = orm.em.fork();
-      const jugadores = await em.findAll(Jugador);
+      const result = await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork();
+        const jugadores = await em.findAll(Jugador);
+        return jugadores;
+      });
       
       res.status(200).json({
         success: true,
-        data: jugadores,
+        data: result,
         message: 'Jugadores obtenidos exitosamente'
       });
     } catch (error) {
@@ -20,7 +64,7 @@ export class JugadorController {
       res.status(500).json({
         success: false,
         data: null,
-        message: 'Error interno del servidor'
+        message: 'Error interno del servidor. Intenta nuevamente en unos momentos.'
       });
     }
   }

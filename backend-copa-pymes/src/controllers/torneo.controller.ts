@@ -1,18 +1,62 @@
 import { Request, Response } from "express";
-import { getORM } from "../shared/db/mikro-orm.config";
+import { getORM, checkConnection } from "../shared/db/mikro-orm.config";
 import { Torneo } from "../models/torneo.model";
+
+// Función auxiliar para reintentar operaciones con base de datos
+const retryDatabaseOperation = async <T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delay: number = 2000
+): Promise<T> => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Verificar conexión antes de intentar la operación
+      const isConnected = await checkConnection();
+      if (!isConnected) {
+        throw new Error('No hay conexión a la base de datos');
+      }
+
+      return await operation();
+    } catch (error: any) {
+      console.error(`❌ Intento ${attempt}/${maxRetries} falló:`, error.message);
+      
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Solo reintentar en errores de conexión/timeout
+      if (error.code === 'ETIMEDOUT' || 
+          error.code === 'ECONNRESET' || 
+          error.code === 'ENOTFOUND' ||
+          error.message.includes('connect') ||
+          error.message.includes('timeout')) {
+        console.log(`⏳ Reintentando en ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        // Incrementar el delay para el siguiente intento
+        delay *= 1.5;
+        continue;
+      }
+      
+      throw error;
+    }
+  }
+  throw new Error('No se pudo completar la operación después de múltiples intentos');
+};
 
 export class TorneoController {
   // Obtener todos los torneos
   static async getAll(req: Request, res: Response): Promise<void> {
     try {
-      const orm = getORM();
-      const em = orm.em.fork();
-      const torneos = await em.findAll(Torneo);
+      const result = await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork();
+        const torneos = await em.findAll(Torneo);
+        return torneos;
+      });
 
       res.status(200).json({
         success: true,
-        data: torneos,
+        data: result,
         message: "Torneos obtenidos exitosamente",
       });
     } catch (error) {
@@ -29,12 +73,14 @@ export class TorneoController {
   static async getById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const orm = getORM();
-      const em = orm.em.fork();
+      
+      const result = await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork();
+        return await em.findOne(Torneo, { id: parseInt(id) });
+      });
 
-      const torneo = await em.findOne(Torneo, { id: parseInt(id) });
-
-      if (!torneo) {
+      if (!result) {
         res.status(404).json({
           success: false,
           data: null,
@@ -45,7 +91,7 @@ export class TorneoController {
 
       res.status(200).json({
         success: true,
-        data: torneo,
+        data: result,
         message: "Torneo obtenido exitosamente",
       });
     } catch (error) {
@@ -73,39 +119,47 @@ export class TorneoController {
         return;
       }
 
-      const orm = getORM();
-      const em = orm.em.fork();
+      const result = await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork();
 
-      // Verificar si ya existe un torneo con el mismo nombre
-      const existingTorneo = await em.findOne(Torneo, {
-        $or: [{ nombre }],
-      });
-
-      if (existingTorneo) {
-        res.status(409).json({
-          success: false,
-          data: null,
-          message: "Ya existe un torneo con ese nombre",
+        // Verificar si ya existe un torneo con el mismo nombre
+        const existingTorneo = await em.findOne(Torneo, {
+          $or: [{ nombre }],
         });
-        return;
-      }
 
-      const torneo = new Torneo();
-      torneo.nombre = nombre;
-      torneo.tipo = tipo;
-      torneo.modalidad = modalidad;
-      torneo.fecha_inicio = fecha_inicio;
-      torneo.fecha_fin = new Date(fecha_fin);
+        if (existingTorneo) {
+          throw new Error(`Ya existe un torneo con el nombre: ${nombre}`);
+        }
 
-      await em.persistAndFlush(torneo);
+        const torneo = new Torneo();
+        torneo.nombre = nombre;
+        torneo.tipo = tipo;
+        torneo.modalidad = modalidad;
+        torneo.fecha_inicio = fecha_inicio;
+        torneo.fecha_fin = new Date(fecha_fin);
+
+        await em.persistAndFlush(torneo);
+        return torneo;
+      });
 
       res.status(201).json({
         success: true,
-        data: torneo,
+        data: result,
         message: "Torneo creado exitosamente",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al crear torneo:", error);
+      
+      if (error.message && error.message.includes("Ya existe un torneo")) {
+        res.status(409).json({
+          success: false,
+          data: null,
+          message: error.message,
+        });
+        return;
+      }
+      
       res.status(500).json({
         success: false,
         data: null,
@@ -120,12 +174,36 @@ export class TorneoController {
       const { id } = req.params;
       const { nombre, tipo, modalidad, fecha_inicio, fecha_fin } = req.body;
 
-      const orm = getORM();
-      const em = orm.em.fork();
+      const result = await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork();
 
-      const torneo = await em.findOne(Torneo, { id: parseInt(id) });
+        const torneo = await em.findOne(Torneo, { id: parseInt(id) });
 
-      if (!torneo) {
+        if (!torneo) {
+          throw new Error('Torneo no encontrado');
+        }
+
+        // Actualizar campos
+        if (nombre) torneo.nombre = nombre;
+        if (tipo) torneo.tipo = tipo;
+        if (modalidad) torneo.modalidad = modalidad;
+        if (fecha_inicio) torneo.fecha_inicio = fecha_inicio;
+        if (fecha_fin) torneo.fecha_fin = new Date(fecha_fin);
+
+        await em.persistAndFlush(torneo);
+        return torneo;
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: "Torneo actualizado exitosamente",
+      });
+    } catch (error: any) {
+      console.error("Error al actualizar torneo:", error);
+      
+      if (error.message === 'Torneo no encontrado') {
         res.status(404).json({
           success: false,
           data: null,
@@ -133,23 +211,7 @@ export class TorneoController {
         });
         return;
       }
-
-      // Actualizar campos
-      if (nombre) torneo.nombre = nombre;
-      if (tipo) torneo.tipo = tipo;
-      if (modalidad) torneo.modalidad = modalidad;
-      if (fecha_inicio) torneo.fecha_inicio = fecha_inicio;
-      if (fecha_fin) torneo.fecha_fin = new Date(fecha_fin);
-
-      await em.persistAndFlush(torneo);
-
-      res.status(200).json({
-        success: true,
-        data: torneo,
-        message: "Torneo actualizado exitosamente",
-      });
-    } catch (error) {
-      console.error("Error al actualizar torneo:", error);
+      
       res.status(500).json({
         success: false,
         data: null,
@@ -162,12 +224,30 @@ export class TorneoController {
   static async delete(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const orm = getORM();
-      const em = orm.em.fork();
+      
+      await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork();
 
-      const torneo = await em.findOne(Torneo, { id: parseInt(id) });
+        const torneo = await em.findOne(Torneo, { id: parseInt(id) });
 
-      if (!torneo) {
+        if (!torneo) {
+          throw new Error('Torneo no encontrado');
+        }
+
+        await em.removeAndFlush(torneo);
+        return torneo;
+      });
+
+      res.status(200).json({
+        success: true,
+        data: null,
+        message: "Torneo eliminado exitosamente",
+      });
+    } catch (error: any) {
+      console.error("Error al eliminar torneo:", error);
+      
+      if (error.message === 'Torneo no encontrado') {
         res.status(404).json({
           success: false,
           data: null,
@@ -175,16 +255,7 @@ export class TorneoController {
         });
         return;
       }
-
-      await em.removeAndFlush(torneo);
-
-      res.status(200).json({
-        success: true,
-        data: null,
-        message: "Torneo eliminado exitosamente",
-      });
-    } catch (error) {
-      console.error("Error al eliminar torneo:", error);
+      
       res.status(500).json({
         success: false,
         data: null,

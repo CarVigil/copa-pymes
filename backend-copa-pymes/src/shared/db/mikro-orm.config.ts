@@ -13,20 +13,30 @@ const config = {
   pool: {
     min: 1,
     max: 3, // Reducido a 3 para no exceder el límite de 5 conexiones
-    acquireTimeoutMillis: 30000,
-    createTimeoutMillis: 30000,
+    acquireTimeoutMillis: 60000, // Aumentado para conexiones en la nube
+    createTimeoutMillis: 60000,
     destroyTimeoutMillis: 5000,
-    idleTimeoutMillis: 30000,
-    reapIntervalMillis: 1000,
-    createRetryIntervalMillis: 200,
+    idleTimeoutMillis: 300000, // 5 minutos
+    reapIntervalMillis: 10000, // Cada 10 segundos
+    createRetryIntervalMillis: 500,
   },
   driverOptions: {
     connection: {
       timezone: 'Z',
-      connectTimeout: 10000,
-      acquireTimeout: 10000,
-      timeout: 10000,
+      connectTimeout: 60000, // 60 segundos para conexiones en la nube
+      // Eliminamos acquireTimeout y timeout ya que no son válidas para MySQL2
+      ssl: false, // Clever Cloud no requiere SSL por defecto
+      // Configuraciones adicionales para estabilidad
+      supportBigNumbers: true,
+      bigNumberStrings: true,
+      dateStrings: false,
+      charset: 'utf8mb4',
     },
+  },
+  // Configuración de reconexión automática
+  migrations: {
+    path: './dist/migrations',
+    pathTs: './src/migrations',
   },
   schemaGenerator: {
     disableForeignKeys: true,
@@ -40,7 +50,13 @@ let orm: MikroORM;
 
 export const initializeORM = async (): Promise<MikroORM> => {
   if (!orm) {
-    orm = await MikroORM.init(config);
+    try {
+      orm = await MikroORM.init(config);
+      console.log('📡 MikroORM inicializado correctamente');
+    } catch (error: any) {
+      console.error('❌ Error inicializando MikroORM:', error.message);
+      throw error;
+    }
   }
   return orm;
 };
@@ -50,6 +66,21 @@ export const getORM = (): MikroORM => {
     throw new Error('ORM no ha sido inicializado. Llama a initializeORM() primero.');
   }
   return orm;
+};
+
+// Función para verificar y reconectar si es necesario
+export const checkConnection = async (): Promise<boolean> => {
+  try {
+    if (!orm) {
+      await initializeORM();
+    }
+    
+    await orm.em.getConnection().execute('SELECT 1');
+    return true;
+  } catch (error: any) {
+    console.error('❌ Error verificando conexión:', error.message);
+    return false;
+  }
 };
 
 export default config;
