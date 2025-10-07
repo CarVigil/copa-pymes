@@ -4,6 +4,10 @@ import { MikroORM, RequestContext } from '@mikro-orm/core';
 import { initializeORM, getORM } from './shared/db/mikro-orm.config';
 import { usuarioRoutes } from './routes/usuario.routes';
 import torneoRoutes from './routes/torneo.routes';
+import equipoRoutes from './routes/equipo.routes';
+import divisionRoutes from './routes/division.routes';
+import sedeRoutes from './routes/sede.routes';
+import premioRoutes from './routes/premio.routes';
 import authRoutes from './routes/auth.routes';
 
 const app = express();
@@ -64,7 +68,10 @@ app.use('/api/usuarios', usuarioRoutes);
 // Rutas de torneos (protegidas)
 app.use('/api/torneos', torneoRoutes);
 
-
+app.use('/api/equipos', equipoRoutes);
+app.use('/api/divisiones', divisionRoutes);
+app.use('/api/sedes', sedeRoutes);
+app.use('/api/premios', premioRoutes);
 
 // Función para cerrar conexiones de base de datos
 const closeDatabase = async () => {
