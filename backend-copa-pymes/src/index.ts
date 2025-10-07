@@ -2,8 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import { MikroORM, RequestContext } from '@mikro-orm/core';
 import { initializeORM, getORM } from './shared/db/mikro-orm.config';
-import jugadorRoutes from './routes/jugador.routes';
+import { usuarioRoutes } from './routes/usuario.routes';
 import torneoRoutes from './routes/torneo.routes';
+import authRoutes from './routes/auth.routes';
 
 const app = express();
 const PORT = 3000;
@@ -54,10 +55,13 @@ app.get('/api/test-torneos', async (req: any, res: any) => {
   }
 });
 
-// Rutas de jugadores
-app.use('/api/jugadores', jugadorRoutes);
+// Rutas de autenticación (públicas)
+app.use('/api/auth', authRoutes);
 
-// Rutas de torneos
+// Rutas de usuarios (protegidas) - reemplaza a jugadores
+app.use('/api/usuarios', usuarioRoutes);
+
+// Rutas de torneos (protegidas)
 app.use('/api/torneos', torneoRoutes);
 
 

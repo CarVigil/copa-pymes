@@ -1,10 +1,18 @@
 import { MikroORM } from '@mikro-orm/core';
 import { SqlHighlighter } from '@mikro-orm/sql-highlighter';
 import { MySqlDriver } from '@mikro-orm/mysql';
+import { Usuario } from '../../models/usuario.model';
+import { Administrador } from '../../models/especialized/administrador.model';
+import { Gestor } from '../../models/especialized/gestor.model';
+import { Recepcionista } from '../../models/especialized/recepcionista.model';
+import { Arbitro } from '../../models/especialized/arbitro.model';
+import { Jugador } from '../../models/especialized/jugador.model';
+import { Torneo } from '../../models/torneo.model';
 
 const config = {
-  entities: ['dist/models/**/*.js'],
-  entitiesTs: ['src/models/**/*.ts'],
+  entities: ['dist/models/usuario.model.js', 'dist/models/especialized/*.js', 'dist/models/torneo.model.js'],
+  entitiesTs: ['src/models/usuario.model.ts', 'src/models/especialized/*.ts', 'src/models/torneo.model.ts'],
+  discoveryWarnWhenNoEntities: false,
   dbName: 'bvyzuetsns2jpfto0ops',
   driver: MySqlDriver,
   clientUrl: 'mysql://utcxia3koyihzi4k:Vu8ZtMMSIwjR4Gx0HZIP@bvyzuetsns2jpfto0ops-mysql.services.clever-cloud.com:3306/bvyzuetsns2jpfto0ops',
