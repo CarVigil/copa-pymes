@@ -125,13 +125,13 @@ const init = async () => {
     try {
       console.log(`🔄 Conectando a la base de datos... (Intento ${retries + 1}/${maxRetries})`);
       const orm = await initializeORM();
-      
+
       // Probar la conexión
       await orm.em.getConnection().execute('SELECT 1');
-      
-      console.log('🔄 Actualizando esquema de base de datos...');
-      await orm.getSchemaGenerator().updateSchema();
-      
+
+      //console.log('🔄 Actualizando esquema de base de datos...');
+      //await orm.getSchemaGenerator().updateSchema();
+
       console.log('✅ Base de datos configurada correctamente');
 
       const server = app.listen(PORT, () => {

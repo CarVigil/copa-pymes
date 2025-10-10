@@ -12,8 +12,9 @@
   },
   "dependencies": {
     "@mikro-orm/cli": "6.5.2",
-    "@mikro-orm/core": "6.5.2",
-    "@mikro-orm/mysql": "6.5.2",
+    "@mikro-orm/core": "^6.5.2",
+    "@mikro-orm/migrations": "^6.5.2",
+    "@mikro-orm/mysql": "^6.5.2",
     "@mikro-orm/sql-highlighter": "^1.0.1",
     "@types/bcryptjs": "^3.0.0",
     "@types/jsonwebtoken": "^9.0.10",

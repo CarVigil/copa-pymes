@@ -1,9 +1,9 @@
-import { PrimaryKey, Property } from '@mikro-orm/core';
+import { PrimaryKey, Property } from "@mikro-orm/core";
 
 export abstract class BaseModel {
-  @PrimaryKey()
+  @PrimaryKey({ type: "number", autoincrement: true })
   id?: number;
-
+  
   /*
   @Property({type: 'DateTimeType' })
   createdAt?: Date = new Date();
@@ -11,5 +11,4 @@ export abstract class BaseModel {
   @Property({ type: 'DateTimeType' , onUpdate: () => new Date() })
   updatedAt?: Date = new Date();
   */
-
 }
