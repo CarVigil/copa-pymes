@@ -1,7 +1,7 @@
 // components/modals/ModalAgregarTorneo.tsx
-import React, { useState } from 'react';
-import { CreateTorneoRequest } from '../../types';
-import './ModalAgregarTorneo.css';
+import React, { useState } from "react";
+import { CreateTorneoRequest } from "../../types";
+import "./ModalAgregarTorneo.css";
 
 interface ModalAgregarTorneoProps {
   isOpen: boolean;
@@ -17,11 +17,14 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
   isLoading,
 }) => {
   const [formData, setFormData] = useState<CreateTorneoRequest>({
-    nombre: '',
-    tipo: '',
-    modalidad: '',
-    fecha_inicio: '',
-    fecha_fin: '',
+    nombre: "",
+    tipo: "",
+    modalidad: "",
+    fechaInicio: "",
+    fechaFin: "",
+    cantidadDivisiones: undefined,
+    cantidadEquipos: undefined,
+    estado: "pendiente",
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -29,10 +32,22 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    setFormData((prev) => {
+      if (name === "tipo" && value !== "todos_contra_todos") {
+        return {
+          ...prev,
+          tipo: value,
+          cantidadDivisiones: undefined,
+        };
+      }
+
+      return {
+        ...prev,
+        [name]: value,
+      };
+    });
+
     setError(null);
   };
 
@@ -45,32 +60,33 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
       !formData.nombre ||
       !formData.tipo ||
       !formData.modalidad ||
-      !formData.fecha_inicio ||
-      !formData.fecha_fin
+      !formData.fechaInicio ||
+      !formData.fechaFin
     ) {
-      setError('Por favor completa todos los campos');
+      setError("Por favor completa todos los campos");
       return;
     }
 
-    if (new Date(formData.fecha_inicio) >= new Date(formData.fecha_fin)) {
-      setError('La fecha de fin debe ser posterior a la fecha de inicio');
+    if (new Date(formData.fechaInicio) >= new Date(formData.fechaFin)) {
+      setError("La fecha de fin debe ser posterior a la fecha de inicio");
       return;
     }
 
     try {
       await onSubmit(formData);
       setFormData({
-        nombre: '',
-        tipo: '',
-        modalidad: '',
-        fecha_inicio: '',
-        fecha_fin: '',
+        nombre: "",
+        tipo: "",
+        modalidad: "",
+        fechaInicio: "",
+        fechaFin: "",
+        cantidadDivisiones: undefined,
+        cantidadEquipos: undefined,
+        estado: "pendiente",
       });
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Error al crear el torneo'
-      );
+      setError(err instanceof Error ? err.message : "Error al crear el torneo");
     }
   };
 
@@ -118,9 +134,8 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
                 disabled={isLoading}
               >
                 <option value="">Seleccionar tipo</option>
-                <option value="Eliminatorio">Eliminatorio</option>
-                <option value="Todos contra todos">Todos contra todos</option>
-                <option value="Combinado">Combinado</option>
+                <option value="eliminatorio">Eliminatorio</option>
+                <option value="todos_contra_todos">Todos contra todos</option>
               </select>
             </div>
 
@@ -134,33 +149,67 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
                 disabled={isLoading}
               >
                 <option value="">Seleccionar modalidad</option>
-                <option value="Fútbol 5">Fútbol 5</option>
-                <option value="Fútbol 8">Fútbol 8</option>
-                <option value="Fútbol 11">Fútbol 11</option>
+                <option value="futbol5">Fútbol 5</option>
+                <option value="futbol8">Fútbol 8</option>
+                <option value="futbol11">Fútbol 11</option>
               </select>
             </div>
           </div>
 
           <div className="form-row">
+            {formData.tipo === "todos_contra_todos" && (
+              <div className="form-group">
+                <label htmlFor="cantidadDivisiones">
+                  Cantidad de Divisiones
+                </label>
+                <input
+                  type="number"
+                  id="cantidadDivisiones"
+                  name="cantidadDivisiones"
+                  value={formData.cantidadDivisiones || ""}
+                  onChange={handleChange}
+                  placeholder="Ej: 3"
+                  min={1}
+                  disabled={isLoading}
+                />
+              </div>
+            )}
+
             <div className="form-group">
-              <label htmlFor="fecha_inicio">Fecha de Inicio *</label>
+              <label htmlFor="cantidadEquipos">Cantidad de Equipos</label>
+              <input
+                type="number"
+                id="cantidadEquipos"
+                name="cantidadEquipos"
+                value={formData.cantidadEquipos || ""}
+                onChange={handleChange}
+                placeholder="Ej: 10"
+                min={1}
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="fechaInicio">Fecha de Inicio *</label>
               <input
                 type="datetime-local"
-                id="fecha_inicio"
-                name="fecha_inicio"
-                value={formData.fecha_inicio}
+                id="fechaInicio"
+                name="fechaInicio"
+                value={formData.fechaInicio}
                 onChange={handleChange}
                 disabled={isLoading}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="fecha_fin">Fecha de Fin *</label>
+              <label htmlFor="fechaFin">Fecha de Fin *</label>
               <input
                 type="datetime-local"
-                id="fecha_fin"
-                name="fecha_fin"
-                value={formData.fecha_fin}
+                id="fechaFin"
+                name="fechaFin"
+                value={formData.fechaFin}
                 onChange={handleChange}
                 disabled={isLoading}
               />
@@ -181,7 +230,7 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
               className="btn btn-success"
               disabled={isLoading}
             >
-              {isLoading ? 'Creando...' : '➕ Crear Torneo'}
+              {isLoading ? "Creando..." : "➕ Crear Torneo"}
             </button>
           </div>
         </form>

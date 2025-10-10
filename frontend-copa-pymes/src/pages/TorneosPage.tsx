@@ -121,8 +121,8 @@ export const TorneosPage: React.FC = () => {
                     <td>{torneo.nombre}</td>
                     <td>{torneo.tipo}</td>
                     <td>{torneo.modalidad}</td>
-                    <td>{formatFecha(torneo.fecha_inicio)}</td>
-                    <td>{formatFecha(torneo.fecha_fin)}</td>
+                    <td>{formatFecha(torneo.fechaInicio)}</td>
+                    <td>{formatFecha(torneo.fechaFin)}</td>
                     <td>
                       <button 
                         className="btn btn-sm btn-warning"

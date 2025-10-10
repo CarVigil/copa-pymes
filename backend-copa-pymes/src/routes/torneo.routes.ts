@@ -12,5 +12,7 @@ router.get('/:id', authenticateToken, requireJugadorOrAdmin, TorneoController.ge
 router.post('/', authenticateToken, requireAdmin, TorneoController.create);
 router.put('/:id', authenticateToken, requireAdmin, TorneoController.update);
 router.delete('/:id', authenticateToken, requireAdmin, TorneoController.delete);
+router.post('/:id/abrir-inscripciones', authenticateToken, requireAdmin, TorneoController.abrirInscripciones);
+router.post('/:id/cerrar-inscripciones', authenticateToken, requireAdmin, TorneoController.cerrarInscripciones);
 
 export default router;
