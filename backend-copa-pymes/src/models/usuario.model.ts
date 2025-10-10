@@ -10,7 +10,17 @@ export enum UsuarioRole {
   JUGADOR = 'jugador'
 }
 
-@Entity({ tableName: 'usuario', discriminatorColumn: 'role' })
+@Entity({
+  tableName: 'usuario',
+  discriminatorColumn: 'role',
+  discriminatorMap: {
+    [UsuarioRole.ADMINISTRADOR]: 'Administrador',
+    [UsuarioRole.GESTOR]: 'Gestor',
+    [UsuarioRole.RECEPCIONISTA]: 'Recepcionista',
+    [UsuarioRole.ARBITRO]: 'Arbitro',
+    [UsuarioRole.JUGADOR]: 'Jugador',
+  }
+})
 export abstract class Usuario extends BaseModel {
   @Property({ unique: true })
   email!: string;
@@ -59,7 +69,6 @@ export abstract class Usuario extends BaseModel {
     return rest;
   }
 
-  // Métodos de utilidad para verificar roles
   isAdministrador(): boolean {
     return this.role === UsuarioRole.ADMINISTRADOR;
   }
@@ -80,18 +89,58 @@ export abstract class Usuario extends BaseModel {
     return this.role === UsuarioRole.JUGADOR;
   }
 
-  // Verificar si tiene permisos de gestión
   hasManagementPermissions(): boolean {
     return this.isAdministrador() || this.isGestor();
   }
 
-  // Verificar si puede crear torneos
   canCreateTournaments(): boolean {
     return this.isAdministrador();
   }
 
-  // Verificar si puede cargar resultados
   canLoadResults(): boolean {
     return this.isAdministrador() || this.isRecepcionista();
   }
+}
+
+// Clases especializadas
+@Entity()
+export class Administrador extends Usuario {
+  @Property({ nullable: true })
+  nivel_acceso?: string;
+}
+
+@Entity()
+export class Gestor extends Usuario {
+  @Property({ nullable: true })
+  departamento?: string;
+}
+
+@Entity()
+export class Recepcionista extends Usuario {
+  @Property({ nullable: true })
+  turno?: string;
+}
+
+@Entity()
+export class Arbitro extends Usuario {
+  @Property({ nullable: true })
+  categoria?: string;
+
+  @Property({ nullable: true })
+  numero_licencia?: string;
+
+  @Property({ nullable: true })
+  especialidad?: string;
+}
+
+@Entity()
+export class Jugador extends Usuario {
+  @Property({ nullable: true })
+  posicion?: string;
+
+  @Property({ nullable: true })
+  numero_camiseta?: number;
+
+  @Property({ nullable: true })
+  equipo_id?: number;
 }

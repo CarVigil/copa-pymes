@@ -1,9 +1,4 @@
-import { Usuario, UsuarioRole } from './usuario.model';
-import { Administrador } from './especialized/administrador.model';
-import { Gestor } from './especialized/gestor.model';
-import { Recepcionista } from './especialized/recepcionista.model';
-import { Arbitro } from './especialized/arbitro.model';
-import { Jugador } from './especialized/jugador.model';
+import { Usuario, UsuarioRole, Administrador, Gestor, Recepcionista, Arbitro, Jugador } from './usuario.model';
 
 export interface CreateUsuarioData {
   email: string;
@@ -16,23 +11,14 @@ export interface CreateUsuarioData {
   fecha_nacimiento?: Date;
   
   // Campos específicos según el rol
-  // Para Jugador
   posicion?: string;
   numero_camiseta?: number;
   equipo_id?: number;
-  
-  // Para Gestor
   departamento?: string;
-  
-  // Para Recepcionista
   turno?: string;
-  
-  // Para Árbitro
   categoria?: string;
   numero_licencia?: string;
   especialidad?: string;
-  
-  // Para Administrador
   nivel_acceso?: string;
 }
 
@@ -113,10 +99,3 @@ export class UsuarioFactory {
     }
   }
 }
-
-// Exportar todas las clases especializadas
-export { Administrador } from './especialized/administrador.model';
-export { Gestor } from './especialized/gestor.model';
-export { Recepcionista } from './especialized/recepcionista.model';
-export { Arbitro } from './especialized/arbitro.model';
-export { Jugador } from './especialized/jugador.model';
