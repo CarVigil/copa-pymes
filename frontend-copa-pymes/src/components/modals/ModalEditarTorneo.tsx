@@ -1,22 +1,24 @@
-// components/modals/ModalAgregarTorneo.tsx
-import React, { useState } from "react";
-import { CreateTorneoRequest } from "../../types";
+// components/modals/ModalEditarTorneo.tsx
+import React, { useState, useEffect } from "react";
+import { UpdateTorneoRequest } from "../../types";
 import "./Modal.css";
 
-interface ModalAgregarTorneoProps {
+interface ModalEditarTorneoProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (datos: CreateTorneoRequest) => Promise<void>;
+  onSubmit: (datos: UpdateTorneoRequest) => Promise<void>;
   isLoading: boolean;
+  torneo: UpdateTorneoRequest | null;
 }
 
-export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
+export const ModalEditarTorneo: React.FC<ModalEditarTorneoProps> = ({
   isOpen,
   onClose,
   onSubmit,
   isLoading,
+  torneo,
 }) => {
-  const [formData, setFormData] = useState<CreateTorneoRequest>({
+  const [formData, setFormData] = useState<UpdateTorneoRequest>({
     nombre: "",
     tipo: "",
     modalidad: "",
@@ -29,6 +31,27 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
 
   const [error, setError] = useState<string | null>(null);
 
+  // Inicializar formulario cuando se abre el modal o cambia el torneo
+  useEffect(() => {
+    if (isOpen && torneo) {
+      setFormData({
+        nombre: torneo.nombre || "",
+        tipo: torneo.tipo || "",
+        modalidad: torneo.modalidad || "",
+        fecha_inicio: torneo.fecha_inicio
+          ? new Date(torneo.fecha_inicio)
+          : new Date(),
+        fecha_fin: torneo.fecha_fin
+          ? new Date(torneo.fecha_fin)
+          : new Date(),
+        cantidad_divisiones: torneo.cantidad_divisiones,
+        cantidad_equipos: torneo.cantidad_equipos,
+        estado: torneo.estado || "pendiente",
+      });
+      setError(null);
+    }
+  }, [isOpen, torneo]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -40,15 +63,9 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
       newValue = value === "" ? undefined : parseInt(value, 10);
     }
 
-    // Resetear divisiones si cambia el tipo
-    if (name === "tipo" && value !== "todos_contra_todos") {
-      setFormData((prev) => ({
-        ...prev,
-        tipo: value,
-        cantidad_divisiones: undefined,
-      }));
-      setError(null);
-      return;
+    // Convertir fecha-hora si es fecha
+    if (name === "fecha_inicio" || name === "fecha_fin") {
+      newValue = new Date(value);
     }
 
     setFormData((prev) => ({
@@ -70,7 +87,8 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
       !formData.modalidad ||
       !formData.cantidad_equipos ||
       !formData.fecha_inicio ||
-      !formData.fecha_fin
+      !formData.fecha_fin ||
+      !formData.estado
     ) {
       setError("Por favor completa todos los campos");
       return;
@@ -83,29 +101,19 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
 
     try {
       await onSubmit(formData);
-      setFormData({
-        nombre: "",
-        tipo: "",
-        modalidad: "",
-        fecha_inicio: new Date(),
-        fecha_fin: new Date(),
-        cantidad_divisiones: undefined,
-        cantidad_equipos: undefined,
-        estado: "pendiente",
-      });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar el torneo");
+      setError(err instanceof Error ? err.message : "Error al guardar los cambios");
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !torneo) return null;
 
   return (
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h2>Agregar Nuevo Torneo</h2>
+          <h2>Editar Torneo</h2>
           <button
             className="modal-close"
             onClick={onClose}
@@ -235,6 +243,22 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
             </div>
           </div>
 
+          <div className="form-group">
+            <label htmlFor="estado">Estado *</label>
+            <select
+              id="estado"
+              name="estado"
+              value={formData.estado}
+              onChange={handleChange}
+              disabled={isLoading}
+            >
+              <option value="pendiente">Pendiente</option>
+              <option value="inscripciones_abiertas">Inscripciones abiertas</option>
+              <option value="activo">Activo</option>
+              <option value="finalizado">Finalizado</option>
+            </select>
+          </div>
+
           <div className="modal-actions">
             <button
               type="button"
@@ -249,7 +273,7 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
               className="btn btn-success"
               disabled={isLoading}
             >
-              {isLoading ? "Creando..." : "➕ Crear Torneo"}
+              {isLoading ? "Guardando..." : "💾 Guardar Cambios"}
             </button>
           </div>
         </form>

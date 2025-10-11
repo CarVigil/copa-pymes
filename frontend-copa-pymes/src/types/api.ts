@@ -44,6 +44,9 @@ export interface Torneo {
   modalidad: string;
   fecha_inicio: Date;
   fecha_fin: Date;
+  cantidad_divisiones: number;
+  cantidad_equipos: number;
+  estado: string;
 }
 
 export interface CreateTorneoRequest {
@@ -52,6 +55,9 @@ export interface CreateTorneoRequest {
   modalidad: string;
   fecha_inicio: Date;
   fecha_fin: Date;
+  cantidad_divisiones: number;
+  cantidad_equipos: number;
+  estado: string;
 }
 
 export interface UpdateTorneoRequest {
@@ -60,6 +66,9 @@ export interface UpdateTorneoRequest {
   modalidad?: string;
   fecha_inicio?: Date;
   fecha_fin?: Date;
+  cantidad_divisiones: number;
+  cantidad_equipos: number;
+  estado: string;
 }
 
 

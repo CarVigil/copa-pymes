@@ -16,16 +16,16 @@ export class Torneo extends BaseModel {
   modalidad!: "futbol5" | "futbol8" | "futbol11";
 
   @Property({ nullable: true })
-  cantidadDivisiones?: number;
+  cantidad_divisiones?: number;
 
   @Property({ nullable: true })
-  cantidadEquipos?: number;
+  cantidad_equipos?: number;
 
   @Property({ nullable: true, columnType: 'date' })
-  fechaInicio?: Date;
+  fecha_inicio?: Date;
 
   @Property({ nullable: true, columnType: 'date' })
-  fechaFin?: Date;
+  fecha_fin?: Date;
 
   @Property({ default: 'pendiente' })
   estado: 'pendiente' | 'inscripciones_abiertas' | 'activo' | 'finalizado' = 'pendiente';

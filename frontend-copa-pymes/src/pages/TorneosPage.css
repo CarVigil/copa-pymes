@@ -233,3 +233,29 @@
     justify-content: center;
   }
 }
+
+
+.badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.5rem;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.badge-pendiente {
+  background-color: gray;
+}
+
+.badge-inscripciones {
+  background-color: #3498db; /* azul */
+}
+
+.badge-activo {
+  background-color: #2ecc71; /* verde */
+}
+
+.badge-finalizado {
+  background-color: #e74c3c; /* rojo */
+}

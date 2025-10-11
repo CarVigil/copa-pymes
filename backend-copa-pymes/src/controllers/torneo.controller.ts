@@ -1,11 +1,10 @@
-import { Request, Response } from "express";
-import { getORM, checkConnection } from "../shared/db/mikro-orm.config";
-import { Torneo } from "../models/torneo.model";
-import { Equipo } from "../models/equipo.model";
-import { Partido } from "../models/partido.model";
-import { EntityManager } from "@mikro-orm/mysql";
-import { SqlEntityManager } from '@mikro-orm/mysql'; // o el driver que uses
-
+import { Request, Response } from 'express';
+import { getORM, checkConnection } from '../shared/db/mikro-orm.config';
+import { Torneo } from '../models/torneo.model';
+import { Equipo } from '../models/equipo.model';
+import { Partido } from '../models/partido.model';
+import { EntityManager } from '@mikro-orm/mysql';
+import { SqlEntityManager } from '@mikro-orm/mysql';
 
 // Función auxiliar para reintentar operaciones con base de datos
 const retryDatabaseOperation = async <T>(
@@ -27,11 +26,11 @@ const retryDatabaseOperation = async <T>(
       if (attempt === maxRetries) throw error;
 
       if (
-        error.code === 'ETIMEDOUT' ||
-        error.code === 'ECONNRESET' ||
-        error.code === 'ENOTFOUND' ||
-        error.message.includes('connect') ||
-        error.message.includes('timeout')
+        error.code === "ETIMEDOUT" ||
+        error.code === "ECONNRESET" ||
+        error.code === "ENOTFOUND" ||
+        error.message.includes("connect") ||
+        error.message.includes("timeout")
       ) {
         console.log(`⏳ Reintentando en ${delay}ms...`);
         await new Promise((resolve) => setTimeout(resolve, delay));
@@ -115,10 +114,10 @@ export class TorneoController {
         nombre,
         tipo,
         modalidad,
-        fechaInicio,
-        fechaFin,
-        cantidadDivisiones,
-        cantidadEquipos,
+        fecha_inicio,
+        fecha_fin,
+        cantidad_divisiones,
+        cantidad_equipos,
         estado,
       } = req.body;
 
@@ -126,7 +125,14 @@ export class TorneoController {
       const tiposValidos = ["eliminatorio", "todos_contra_todos"];
       const estadosValidos = ["pendiente", "en_progreso", "finalizado"];
 
-      if (!nombre || !tipo || !modalidad || !fechaInicio || !fechaFin || !cantidadEquipos) {
+      if (
+        !nombre ||
+        !tipo ||
+        !modalidad ||
+        !fecha_inicio ||
+        !fecha_fin ||
+        !cantidad_equipos
+      ) {
         res.status(400).json({
           success: false,
           data: null,
@@ -179,10 +185,10 @@ export class TorneoController {
         torneo.nombre = nombre;
         torneo.tipo = tipo;
         torneo.modalidad = modalidad;
-        torneo.fechaInicio = new Date(fechaInicio);
-        torneo.fechaFin = new Date(fechaFin);
-        torneo.cantidadDivisiones = cantidadDivisiones || 1;
-        torneo.cantidadEquipos = cantidadEquipos || 0;
+        torneo.fecha_inicio = new Date(fecha_inicio);
+        torneo.fecha_fin = new Date(fecha_fin);
+        torneo.cantidad_divisiones = cantidad_divisiones || 1;
+        torneo.cantidad_equipos = cantidad_equipos || 0;
         torneo.estado = estado || "pendiente";
 
         await em.persistAndFlush(torneo);
@@ -222,16 +228,21 @@ export class TorneoController {
         nombre,
         tipo,
         modalidad,
-        fechaInicio,
-        fechaFin,
-        cantidadDivisiones,
-        cantidadEquipos,
+        fecha_inicio,
+        fecha_fin,
+        cantidad_divisiones,
+        cantidad_equipos,
         estado,
       } = req.body;
 
       const modalidadesValidas = ["futbol5", "futbol8", "futbol11"];
       const tiposValidos = ["eliminatorio", "todos_contra_todos"];
-      const estadosValidos = ["pendiente", "en_progreso", "finalizado"];
+      const estadosValidos = [
+        "pendiente",
+        "inscripciones_abiertas",
+        "activo",
+        "finalizado",
+      ];
 
       const result = await retryDatabaseOperation(async () => {
         const orm = getORM();
@@ -244,11 +255,17 @@ export class TorneoController {
         if (tipo && tiposValidos.includes(tipo)) torneo.tipo = tipo;
         if (modalidad && modalidadesValidas.includes(modalidad))
           torneo.modalidad = modalidad;
-        if (fechaInicio) torneo.fechaInicio = new Date(fechaInicio);
-        if (fechaFin) torneo.fechaFin = new Date(fechaFin);
-        if (cantidadDivisiones) torneo.cantidadDivisiones = cantidadDivisiones;
-        if (cantidadEquipos) torneo.cantidadEquipos = cantidadEquipos;
-        if (estado && estadosValidos.includes(estado)) torneo.estado = estado;
+        if (fecha_inicio) torneo.fecha_inicio = new Date(fecha_inicio);
+        if (fecha_fin) torneo.fecha_fin = new Date(fecha_fin);
+        if (cantidad_divisiones !== undefined)
+          torneo.cantidad_divisiones = cantidad_divisiones;
+        if (cantidad_equipos !== undefined)
+          torneo.cantidad_equipos = cantidad_equipos;
+        if (estado && estadosValidos.includes(estado)) {
+          torneo.estado = estado;
+        } else if (estado) {
+          console.warn(`Estado no válido recibido: ${estado}`);
+        }
 
         await em.persistAndFlush(torneo);
         return torneo;
@@ -257,7 +274,7 @@ export class TorneoController {
       res.status(200).json({
         success: true,
         data: result,
-        message: "Torneo actualizado exitosamente",
+        message: "Torneo actualizado correctamente",
       });
     } catch (error: any) {
       console.error("Error al actualizar torneo:", error);
@@ -274,7 +291,7 @@ export class TorneoController {
       res.status(500).json({
         success: false,
         data: null,
-        message: "Error interno del servidor",
+        message: "Error interno al actualizar torneo",
       });
     }
   }
@@ -336,13 +353,11 @@ export class TorneoController {
       torneo.estado = "inscripciones_abiertas";
       await em.persistAndFlush(torneo);
 
-      res
-        .status(200)
-        .json({
-          success: true,
-          message: "Inscripciones abiertas",
-          data: torneo,
-        });
+      res.status(200).json({
+        success: true,
+        message: "Inscripciones abiertas",
+        data: torneo,
+      });
     } catch (error) {
       console.error(error);
       res
@@ -375,13 +390,11 @@ export class TorneoController {
       // Generar fixture automáticamente
       await TorneoController.generarFixture(torneo, em as SqlEntityManager);
 
-      res
-        .status(200)
-        .json({
-          success: true,
-          message: "Inscripciones cerradas y fixture generado",
-          data: torneo,
-        });
+      res.status(200).json({
+        success: true,
+        message: "Inscripciones cerradas y fixture generado",
+        data: torneo,
+      });
     } catch (error) {
       console.error(error);
       res
