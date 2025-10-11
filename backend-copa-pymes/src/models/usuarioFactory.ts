@@ -11,14 +11,23 @@ export interface CreateUsuarioData {
   fecha_nacimiento?: Date;
   
   // Campos específicos según el rol
+  // Para Jugador
   posicion?: string;
   numero_camiseta?: number;
   equipo_id?: number;
+  
+  // Para Gestor
   departamento?: string;
+  
+  // Para Recepcionista
   turno?: string;
+  
+  // Para Árbitro
   categoria?: string;
   numero_licencia?: string;
   especialidad?: string;
+  
+  // Para Administrador
   nivel_acceso?: string;
 }
 
