@@ -9,6 +9,8 @@ import divisionRoutes from './routes/division.routes';
 import sedeRoutes from './routes/sede.routes';
 import premioRoutes from './routes/premio.routes';
 import authRoutes from './routes/auth.routes';
+import inscripcionRoutes from './routes/inscripcion.routes';
+import partidosRoutes from './routes/partido.routes';
 
 const app = express();
 const PORT = 3000;
@@ -67,11 +69,12 @@ app.use('/api/usuarios', usuarioRoutes);
 
 // Rutas de torneos (protegidas)
 app.use('/api/torneos', torneoRoutes);
-
 app.use('/api/equipos', equipoRoutes);
 app.use('/api/divisiones', divisionRoutes);
 app.use('/api/sedes', sedeRoutes);
 app.use('/api/premios', premioRoutes);
+app.use('/api/inscripciones', inscripcionRoutes);
+app.use('/api/partidos', partidosRoutes);
 
 // Función para cerrar conexiones de base de datos
 const closeDatabase = async () => {
@@ -136,7 +139,7 @@ const init = async () => {
 
       const server = app.listen(PORT, () => {
         console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
-        console.log(`📊 Base de datos: MySQL (Cloud)`);
+        console.log(`📊 Base de datos: MySQL (Local)`);
         console.log('💡 Presiona Ctrl+C para cerrar el servidor');
       });
 
