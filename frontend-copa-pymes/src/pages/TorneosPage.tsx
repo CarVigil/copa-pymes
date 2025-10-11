@@ -5,7 +5,7 @@ import { ModalEditarTorneo } from "../components/modals/ModalEditarTorneo";
 import { Loading } from "../components/common/Loading";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { CreateTorneoRequest, UpdateTorneoRequest } from "../types";
-import "./TorneosPage.css";
+import "./Page.css";
 
 export const TorneosPage: React.FC = () => {
   const {
@@ -38,6 +38,7 @@ export const TorneosPage: React.FC = () => {
     try {
       await crearTorneo(datos);
       setSuccessMessage("Torneo creado exitosamente");
+      setIsModalOpen(false);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       console.error("Error al crear torneo:", err);
@@ -63,6 +64,7 @@ export const TorneosPage: React.FC = () => {
     try {
       await actualizarTorneo(id, datos);
       setSuccessMessage("Torneo actualizado correctamente");
+      setIsModalEditarOpen(false);
       setTimeout(() => setSuccessMessage(null), 3000);
       setTorneoEnEdicion(null);
     } catch (err) {
@@ -76,65 +78,52 @@ export const TorneosPage: React.FC = () => {
   };
 
   const getEstadoBadge = (estado: string) => {
-    let colorClass = "";
-    switch (estado) {
-      case "pendiente":
-        colorClass = "badge-pendiente"; // gris
-        break;
-      case "inscripciones_abiertas":
-        colorClass = "badge-inscripciones"; // azul
-        break;
-      case "activo":
-        colorClass = "badge-activo"; // verde
-        break;
-      case "finalizado":
-        colorClass = "badge-finalizado"; // rojo
-        break;
-      default:
-        colorClass = "badge-default";
-    }
+    const estadoMap: { [key: string]: string } = {
+      pendiente: "badge-pending",
+      inscripciones_abiertas: "badge-info",
+      activo: "badge-success",
+      finalizado: "badge-danger",
+    };
+
+    const badgeClass = estadoMap[estado] || "badge-pending";
+    const displayText = estado.replace(/_/g, " ");
+
     return (
-      <span className={`badge ${colorClass}`}>{estado.replace("_", " ")}</span>
+      <span className={`badge ${badgeClass}`}>{displayText}</span>
     );
   };
 
   const getTipo = (tipo: string) => {
-    switch (tipo) {
-      case "todos_contra_todos":
-        return "Todos contra Todos";
-      case "eliminatorio":
-        return "Eliminatorio";
-      default:
-        return tipo;
-    }
+    const tipoMap: { [key: string]: string } = {
+      todos_contra_todos: "Todos contra Todos",
+      eliminatorio: "Eliminatorio",
+    };
+    return tipoMap[tipo] || tipo;
   };
+
   const getModalidad = (modalidad: string) => {
-    switch (modalidad) {
-      case "futbol5":
-        return "Fútbol 5";
-      case "futbol8":
-        return "Fútbol 8";
-      case "futbol11":
-        return "Fútbol 11";
-      default:
-        return modalidad;
-    }
+    const modalidadMap: { [key: string]: string } = {
+      futbol5: "Fútbol 5",
+      futbol8: "Fútbol 8",
+      futbol11: "Fútbol 11",
+    };
+    return modalidadMap[modalidad] || modalidad;
   };
 
   return (
-    <div className="torneos-page">
+    <div className="page">
       <div className="page-header">
         <h1>🏆 Gestión de Torneos</h1>
         <p>Administra todos los torneos registrados en el sistema</p>
       </div>
 
       {successMessage && (
-        <div className="success-message">✓ {successMessage}</div>
+        <div className="message message-success">✓ {successMessage}</div>
       )}
 
       {error && <ErrorMessage message={error} onRetry={refetch} />}
 
-      <div className="torneos-actions">
+      <div className="actions">
         <button className="btn btn-primary" onClick={refetch}>
           🔄 Actualizar Lista
         </button>
@@ -193,15 +182,16 @@ export const TorneosPage: React.FC = () => {
       />
 
       {torneos && torneos.length > 0 ? (
-        <div className="torneos-container">
-          <div className="torneos-stats">
+        <>
+          <div className="stats">
             <div className="stat-card">
               <h3>{torneos.length}</h3>
               <p>Torneos Registrados</p>
             </div>
           </div>
-          <div className="torneos-table-container">
-            <table className="torneos-table">
+
+          <div className="table-container">
+            <table className="table">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -230,14 +220,16 @@ export const TorneosPage: React.FC = () => {
                     <td>{getEstadoBadge(torneo.estado)}</td>
                     <td>
                       <button
-                        className="btn btn-sm btn-warning"
+                        className="btn-icon btn-edit"
                         onClick={() => handleEditarTorneo(torneo)}
+                        title="Editar"
                       >
                         ✏️
                       </button>
                       <button
-                        className="btn btn-sm btn-danger"
+                        className="btn-icon btn-delete"
                         onClick={() => handleEliminarTorneo(torneo.id)}
+                        title="Eliminar"
                       >
                         🗑️
                       </button>
@@ -247,10 +239,11 @@ export const TorneosPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </>
       ) : (
-        <div className="no-torneos">
-          <p>No hay torneos registrados.</p>
+        <div className="empty-state">
+          <h3>📋 No hay torneos registrados</h3>
+          <p>Comienza agregando tu primer torneo al sistema</p>
         </div>
       )}
     </div>

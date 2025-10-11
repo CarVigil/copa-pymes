@@ -2,7 +2,7 @@ import React from 'react';
 import { useJugadores } from '../hooks/useJugadores';
 import { Loading } from '../components/common/Loading';
 import { ErrorMessage } from '../components/common/ErrorMessage';
-import './JugadoresPage.css';
+import './Page.css';
 
 export const JugadoresPage: React.FC = () => {
   const { jugadores, loading, error, refetch } = useJugadores();
@@ -20,13 +20,13 @@ export const JugadoresPage: React.FC = () => {
   };
 
   return (
-    <div className="jugadores-page">
+    <div className="page">
       <div className="page-header">
         <h1>🏃‍♂️ Gestión de Jugadores</h1>
         <p>Administra todos los jugadores registrados en el sistema</p>
       </div>
 
-      <div className="jugadores-actions">
+      <div className="actions">
         <button className="btn btn-primary" onClick={refetch}>
           🔄 Actualizar Lista
         </button>
