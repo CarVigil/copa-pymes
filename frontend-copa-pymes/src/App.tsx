@@ -4,11 +4,12 @@ import { Header } from './components/layout/Header';
 import { HomePage } from './pages/HomePage';
 import { JugadoresPage } from './pages/JugadoresPage';
 import { TorneosPage } from './pages/TorneosPage';
+import { EquiposPage } from './pages/EquiposPage';
 import LoginPage from './pages/LoginPage';
 import { Loading } from './components/common/Loading';
 import './styles/global.css';
 
-type PageType = 'home' | 'jugadores' | 'torneos' | 'login';
+type PageType = 'home' | 'jugadores' | 'torneos' | 'login' | 'equipos';
 
 function App() {
   return (
@@ -46,6 +47,8 @@ function AppContent() {
         return <JugadoresPage />;
       case 'torneos':
         return <TorneosPage />;
+        case 'equipos':
+        return <EquiposPage />;
       default:
         return <HomePage onNavigateToJugadores={() => setCurrentPage('jugadores')} />;
     }
@@ -58,6 +61,7 @@ function AppContent() {
         onNavigateHome={() => setCurrentPage('home')}
         onNavigateJugadores={() => setCurrentPage('jugadores')}
         onNavigateTorneos={() => setCurrentPage('torneos')}
+        onNavigateEquipos={() => setCurrentPage('equipos')}
         currentPage={currentPage}
       />
       <main className="main-content">

@@ -7,6 +7,7 @@ interface HeaderProps {
   onNavigateHome?: () => void;
   onNavigateJugadores?: () => void;
   onNavigateTorneos?: () => void;
+  onNavigateEquipos?: () => void;
   currentPage?: string;
 }
 
@@ -15,6 +16,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateHome,
   onNavigateJugadores,
   onNavigateTorneos,
+  onNavigateEquipos,
   currentPage,
 }) => {
   const { user, logout, isAdmin } = useAuth();
@@ -50,6 +52,14 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onNavigateTorneos}
           >
             Torneos
+          </button>
+          <button
+            className={`nav-button ${
+              currentPage === "Equipos" ? "active" : ""
+            }`}
+            onClick={onNavigateEquipos}
+          >
+            Equipos
           </button>
           <button className="nav-button">Partidos</button>
           <button className="nav-button">Resultados</button>

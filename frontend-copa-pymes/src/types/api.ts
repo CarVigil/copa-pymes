@@ -71,5 +71,17 @@ export interface UpdateTorneoRequest {
   estado: string;
 }
 
+export interface Equipo {
+  id?: number;
+  nombre: string;
+  sigla: string;
+  estado: boolean;
+  escudo?: string;
+}
 
-
+export interface CreateEquipoRequest {
+  nombre: string;
+  sigla: string;
+  estado?: boolean;
+  escudo?: string;
+}
