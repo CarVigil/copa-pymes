@@ -13,7 +13,6 @@ export const useEquipos = () => {
     setError(null);
     try {
       const response = await apiClient.get("/equipos");
-      console.log("✓ Equipos cargados:", response.data);
       setEquipos(response.data.data || response.data);
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || err.message || "Error al cargar equipos";
@@ -28,9 +27,7 @@ export const useEquipos = () => {
     setIsCreating(true);
     setError(null);
     try {
-      console.log("📤 Enviando nuevo equipo:", equipo);
-      const response = await apiClient.post("/equipos", equipo);
-      console.log("✓ Equipo creado:", response.data);
+      await apiClient.post("/equipos", equipo);
       await refetch();
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || err.message || "Error al crear equipo";
@@ -44,9 +41,7 @@ export const useEquipos = () => {
   const actualizarEquipo = async (id: number, data: Partial<Equipo>) => {
     setError(null);
     try {
-      console.log("📤 Actualizando equipo:", id, data);
-      const response = await apiClient.put(`/equipos/${id}`, data);
-      console.log("✓ Equipo actualizado:", response.data);
+      await apiClient.put(`/equipos/${id}`, data);
       await refetch();
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || err.message || "Error al actualizar equipo";
@@ -58,9 +53,7 @@ export const useEquipos = () => {
   const eliminarEquipo = async (id: number) => {
     setError(null);
     try {
-      console.log("📤 Eliminando equipo:", id);
-      const response = await apiClient.delete(`/equipos/${id}`);
-      console.log("✓ Equipo eliminado:", response.data);
+      await apiClient.delete(`/equipos/${id}`);
       await refetch();
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || err.message || "Error al eliminar equipo";

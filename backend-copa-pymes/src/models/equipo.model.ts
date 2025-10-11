@@ -12,6 +12,6 @@ export class Equipo extends BaseModel {
     @Property({ default: true })
     estado!: boolean;
 
-    @Property({ nullable: true })
+    @Property({ nullable: true,  columnType: 'longtext' })
     escudo?: string;
 }
