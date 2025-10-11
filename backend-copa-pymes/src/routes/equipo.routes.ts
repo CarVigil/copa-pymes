@@ -1,18 +1,19 @@
 import { Router } from 'express';
 import { EquipoController } from '../controllers/equipo.controller';
+import { authenticateToken, requireAdmin, requireJugadorOrAdmin } from '../middleware/auth.middleware';
 
 const router = Router();
 
 // Rutas CRUD básicas
-router.get('/equipos', EquipoController.getAll);
-router.get('/equipos/activos', EquipoController.getActivos);
-router.get('/equipos/:id', EquipoController.getById);
-router.post('/equipos', EquipoController.create);
-router.put('/equipos/:id', EquipoController.update);
-router.delete('/equipos/:id', EquipoController.delete);
+router.get('/', authenticateToken, requireJugadorOrAdmin, EquipoController.getAll);
+router.get('/activos', authenticateToken, requireJugadorOrAdmin, EquipoController.getActivos);
+router.get('/:id', authenticateToken, requireJugadorOrAdmin, EquipoController.getById);
+router.post('/', authenticateToken, requireJugadorOrAdmin, EquipoController.create);
+router.put('/:id', authenticateToken, requireJugadorOrAdmin, EquipoController.update);
+router.delete('/:id', authenticateToken, requireJugadorOrAdmin, EquipoController.delete);
 
 // Rutas adicionales
-router.delete('/equipos/:id/permanent', EquipoController.deletePermanent);
-router.patch('/equipos/:id/reactivate', EquipoController.reactivate);
+router.delete('/:id/permanent', authenticateToken, requireAdmin, EquipoController.deletePermanent);
+router.patch('/:id/reactivate', authenticateToken, requireAdmin, EquipoController.reactivate);
 
 export default router;
