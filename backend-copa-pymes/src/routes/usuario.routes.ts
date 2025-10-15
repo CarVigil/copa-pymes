@@ -22,8 +22,9 @@ router.use(authenticateToken);
 router.get('/', requireRole([UsuarioRole.ADMINISTRADOR, UsuarioRole.GESTOR]), UsuarioController.getAll);
 
 // GET /usuarios/rol/:role - Obtener usuarios por rol específico
-// Solo administradores pueden ver usuarios de cualquier rol
-router.get('/rol/:role', requireAdministrador, UsuarioController.getByRole);
+// Todos los usuarios autenticados pueden ver jugadores
+// Solo administradores pueden ver usuarios de otros roles
+router.get('/rol/:role', UsuarioController.getByRole);
 
 // GET /usuarios/stats - Estadísticas de usuarios
 // Solo administradores

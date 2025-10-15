@@ -41,15 +41,12 @@ const config = {
   },
 
   schemaGenerator: {
-    disableForeignKeys: false,  // mantener constraints
+    disableForeignKeys: false, 
     createForeignKeyConstraints: true,
-    safe: true,                 // evita DROP de PRIMARY AUTO_INCREMENT
+    safe: true,                 
   },
 
-  schema: "copa_pymes",
   autoLoadEntities: true, 
-  // ❌ No usar autoSchemaSync en producción
-  // autoSchemaSync: true,  // lo removemos
 };
 
 let orm: MikroORM;

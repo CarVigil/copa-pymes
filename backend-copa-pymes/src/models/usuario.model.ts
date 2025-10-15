@@ -102,7 +102,7 @@ export abstract class Usuario extends BaseModel {
   }
 }
 
-// Clases especializadas
+
 @Entity()
 export class Administrador extends Usuario {
   @Property({ nullable: true })

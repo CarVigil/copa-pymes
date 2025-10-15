@@ -76,11 +76,21 @@ export class UsuarioController {
     static async getByRole(req: Request, res: Response): Promise<void> {
         try {
             const { role } = req.params;
+            const currentUser = (req as any).user; // Usuario autenticado del token
 
             if (!Object.values(UsuarioRole).includes(role as UsuarioRole)) {
                 res.status(400).json({
                     success: false,
                     message: 'Rol inválido'
+                });
+                return;
+            }
+
+            // Solo administradores pueden ver usuarios de roles distintos a 'jugador'
+            if (role !== UsuarioRole.JUGADOR && currentUser.role !== UsuarioRole.ADMINISTRADOR) {
+                res.status(403).json({
+                    success: false,
+                    message: 'No tienes permisos para ver usuarios de este rol'
                 });
                 return;
             }
