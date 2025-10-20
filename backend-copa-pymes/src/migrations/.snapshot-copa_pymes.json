@@ -1,8 +1,5 @@
 {
-  "namespaces": [
-    "copa_pymes"
-  ],
-  "name": "copa_pymes",
+  "namespaces": [],
   "tables": [
     {
       "columns": {
@@ -38,7 +35,6 @@
         }
       },
       "name": "division",
-      "schema": "copa_pymes",
       "indexes": [
         {
           "keyName": "PRIMARY",
@@ -100,17 +96,16 @@
         },
         "escudo": {
           "name": "escudo",
-          "type": "varchar(255)",
+          "type": "longtext",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "length": 255,
-          "mappedType": "string"
+          "length": null,
+          "mappedType": "unknown"
         }
       },
       "name": "equipo",
-      "schema": "copa_pymes",
       "indexes": [
         {
           "keyName": "PRIMARY",
@@ -171,7 +166,6 @@
         }
       },
       "name": "sede",
-      "schema": "copa_pymes",
       "indexes": [
         {
           "keyName": "PRIMARY",
@@ -283,7 +277,6 @@
         }
       },
       "name": "torneo",
-      "schema": "copa_pymes",
       "indexes": [
         {
           "keyName": "PRIMARY",
@@ -364,7 +357,6 @@
         }
       },
       "name": "premio",
-      "schema": "copa_pymes",
       "indexes": [
         {
           "columnNames": [
@@ -394,11 +386,11 @@
           "columnNames": [
             "torneo_id"
           ],
-          "localTableName": "copa_pymes.premio",
+          "localTableName": "premio",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "copa_pymes.torneo",
+          "referencedTableName": "torneo",
           "createForeignKeyConstraint": true,
           "updateRule": "cascade"
         }
@@ -460,7 +452,6 @@
         }
       },
       "name": "inscripcion",
-      "schema": "copa_pymes",
       "indexes": [
         {
           "columnNames": [
@@ -500,11 +491,11 @@
           "columnNames": [
             "torneo_id"
           ],
-          "localTableName": "copa_pymes.inscripcion",
+          "localTableName": "inscripcion",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "copa_pymes.torneo",
+          "referencedTableName": "torneo",
           "createForeignKeyConstraint": true,
           "updateRule": "cascade"
         },
@@ -513,11 +504,11 @@
           "columnNames": [
             "equipo_id"
           ],
-          "localTableName": "copa_pymes.inscripcion",
+          "localTableName": "inscripcion",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "copa_pymes.equipo",
+          "referencedTableName": "equipo",
           "createForeignKeyConstraint": true,
           "updateRule": "cascade"
         }
@@ -735,7 +726,6 @@
         }
       },
       "name": "usuario",
-      "schema": "copa_pymes",
       "indexes": [
         {
           "columnNames": [
@@ -783,6 +773,16 @@
           "nullable": false,
           "length": null,
           "mappedType": "integer"
+        },
+        "fecha": {
+          "name": "fecha",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "length": null,
+          "mappedType": "date"
         },
         "torneo_id": {
           "name": "torneo_id",
@@ -867,7 +867,6 @@
         }
       },
       "name": "partido",
-      "schema": "copa_pymes",
       "indexes": [
         {
           "columnNames": [
@@ -937,11 +936,11 @@
           "columnNames": [
             "torneo_id"
           ],
-          "localTableName": "copa_pymes.partido",
+          "localTableName": "partido",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "copa_pymes.torneo",
+          "referencedTableName": "torneo",
           "createForeignKeyConstraint": true,
           "updateRule": "cascade"
         },
@@ -950,11 +949,11 @@
           "columnNames": [
             "equipo1_id"
           ],
-          "localTableName": "copa_pymes.partido",
+          "localTableName": "partido",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "copa_pymes.equipo",
+          "referencedTableName": "equipo",
           "createForeignKeyConstraint": true,
           "updateRule": "cascade"
         },
@@ -963,11 +962,11 @@
           "columnNames": [
             "equipo2_id"
           ],
-          "localTableName": "copa_pymes.partido",
+          "localTableName": "partido",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "copa_pymes.equipo",
+          "referencedTableName": "equipo",
           "createForeignKeyConstraint": true,
           "updateRule": "cascade"
         },
@@ -976,11 +975,11 @@
           "columnNames": [
             "sede_id"
           ],
-          "localTableName": "copa_pymes.partido",
+          "localTableName": "partido",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "copa_pymes.sede",
+          "referencedTableName": "sede",
           "createForeignKeyConstraint": true,
           "deleteRule": "set null",
           "updateRule": "cascade"
@@ -990,11 +989,11 @@
           "columnNames": [
             "arbitro_id"
           ],
-          "localTableName": "copa_pymes.partido",
+          "localTableName": "partido",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "copa_pymes.usuario",
+          "referencedTableName": "usuario",
           "createForeignKeyConstraint": true,
           "deleteRule": "set null",
           "updateRule": "cascade"

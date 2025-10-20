@@ -265,6 +265,84 @@ export class AuthController {
         }
     }
 
+    // Actualizar perfil del usuario
+    static async updateProfile(req: Request, res: Response): Promise<void> {
+        try {
+            if (!req.user) {
+                res.status(401).json({
+                    success: false,
+                    message: 'Usuario no autenticado'
+                });
+                return;
+            }
+
+            const updates = req.body;
+
+            // Campos que nunca se pueden actualizar por esta ruta
+            delete updates.id;
+            delete updates.email;
+            delete updates.password;
+            delete updates.role;
+            delete updates.activo;
+
+            const result = await retryDatabaseOperation(async () => {
+                const orm = getORM();
+                const em = orm.em.fork();
+
+                const usuario = await em.findOne(Usuario, { id: req.user!.id });
+                if (!usuario) {
+                    throw new Error('Usuario no encontrado');
+                }
+
+                // Actualizar campos básicos
+                if (updates.nombre !== undefined) usuario.nombre = updates.nombre;
+                if (updates.apellido !== undefined) usuario.apellido = updates.apellido;
+                if (updates.documento !== undefined) usuario.documento = updates.documento;
+                if (updates.telefono !== undefined) usuario.telefono = updates.telefono;
+                if (updates.fecha_nacimiento !== undefined) {
+                    usuario.fecha_nacimiento = updates.fecha_nacimiento ? new Date(updates.fecha_nacimiento) : undefined;
+                }
+
+                // Actualizar campos específicos según el rol
+                // TypeScript necesita cast para acceder a propiedades específicas
+                const usuarioAny = usuario as any;
+
+                // Jugador
+                if (updates.posicion !== undefined) usuarioAny.posicion = updates.posicion;
+                if (updates.numero_camiseta !== undefined) usuarioAny.numero_camiseta = updates.numero_camiseta;
+
+                // Gestor
+                if (updates.departamento !== undefined) usuarioAny.departamento = updates.departamento;
+
+                // Recepcionista
+                if (updates.turno !== undefined) usuarioAny.turno = updates.turno;
+
+                // Árbitro
+                if (updates.categoria !== undefined) usuarioAny.categoria = updates.categoria;
+                if (updates.numero_licencia !== undefined) usuarioAny.numero_licencia = updates.numero_licencia;
+                if (updates.especialidad !== undefined) usuarioAny.especialidad = updates.especialidad;
+
+                await em.persistAndFlush(usuario);
+
+                // Retornar usuario actualizado con todas sus propiedades
+                return usuario.toJSON();
+            });
+
+            res.status(200).json({
+                success: true,
+                data: result,
+                message: 'Perfil actualizado exitosamente'
+            });
+
+        } catch (error: any) {
+            console.error('Error actualizando perfil:', error.message);
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor'
+            });
+        }
+    }
+
     // Cambiar contraseña
     static async changePassword(req: Request, res: Response): Promise<void> {
         try {
