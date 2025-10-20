@@ -1,5 +1,6 @@
 import React from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { usePermissions } from "../../hooks/usePermissions";
 import "./Header.css";
 
 interface HeaderProps {
@@ -8,6 +9,7 @@ interface HeaderProps {
   onNavigateJugadores?: () => void;
   onNavigateTorneos?: () => void;
   onNavigateEquipos?: () => void;
+  onNavigateProfile?: () => void;
   currentPage?: string;
 }
 
@@ -17,9 +19,11 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateJugadores,
   onNavigateTorneos,
   onNavigateEquipos,
+  onNavigateProfile,
   currentPage,
 }) => {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout } = useAuth();
+  const { canView } = usePermissions();
 
   const handleLogout = () => {
     logout();
@@ -35,42 +39,75 @@ export const Header: React.FC<HeaderProps> = ({
             className={`nav-button ${currentPage === "home" ? "active" : ""}`}
             onClick={onNavigateHome}
           >
-            Inicio
+            🏠 Inicio
           </button>
-          <button
-            className={`nav-button ${
-              currentPage === "jugadores" ? "active" : ""
-            }`}
-            onClick={onNavigateJugadores}
-          >
-            Jugadores
-          </button>
-          <button
-            className={`nav-button ${
-              currentPage === "torneos" ? "active" : ""
-            }`}
-            onClick={onNavigateTorneos}
-          >
-            Torneos
-          </button>
-          <button
-            className={`nav-button ${
-              currentPage === "Equipos" ? "active" : ""
-            }`}
-            onClick={onNavigateEquipos}
-          >
-            Equipos
-          </button>
-          <button className="nav-button">Partidos</button>
-          <button className="nav-button">Resultados</button>
+          
+          {/* Solo mostrar si tiene permiso para ver jugadores */}
+          {canView('jugadores') && (
+            <button
+              className={`nav-button ${
+                currentPage === "jugadores" ? "active" : ""
+              }`}
+              onClick={onNavigateJugadores}
+            >
+              👥 Jugadores
+            </button>
+          )}
+          
+          {/* Solo mostrar si tiene permiso para ver torneos */}
+          {canView('torneos') && (
+            <button
+              className={`nav-button ${
+                currentPage === "torneos" ? "active" : ""
+              }`}
+              onClick={onNavigateTorneos}
+            >
+              🏆 Torneos
+            </button>
+          )}
+          
+          {/* Solo mostrar si tiene permiso para ver equipos */}
+          {canView('equipos') && (
+            <button
+              className={`nav-button ${
+                currentPage === "equipos" ? "active" : ""
+              }`}
+              onClick={onNavigateEquipos}
+            >
+              ⚽ Equipos
+            </button>
+          )}
+          
+          {/* Solo mostrar si tiene permiso para ver partidos */}
+          {canView('partidos') && (
+            <button className="nav-button">
+              🎮 Partidos
+            </button>
+          )}
+          
+          {/* Solo mostrar si tiene permiso para ver resultados */}
+          {canView('resultados') && (
+            <button className="nav-button">
+              📊 Resultados
+            </button>
+          )}
           
           {/* Información del usuario y logout */}
           <div className="user-section">
-            <span className="user-info">
-              {user?.nombre} ({isAdmin ? 'Admin' : 'Jugador'})
-            </span>
+            <button
+              className={`nav-button profile-button ${
+                currentPage === "profile" ? "active" : ""
+              }`}
+              onClick={onNavigateProfile}
+              title="Ver mi perfil"
+            >
+              <span className="profile-avatar">
+                {user?.nombre.charAt(0).toUpperCase()}
+              </span>
+              <span className="profile-text">Mi Perfil</span>
+            </button>
             <button className="nav-button logout-button" onClick={handleLogout}>
-              Cerrar Sesión
+              🚪 Salir
             </button>
           </div>
         </nav>

@@ -87,7 +87,7 @@ class AuthService {
 
   isAdmin(): boolean {
     const user = this.getUser();
-    return user?.role === 'admin';
+    return user?.role === 'administrador';
   }
 
   async getProfile(): Promise<User> {
@@ -96,6 +96,20 @@ class AuthService {
       return response.data.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Error al obtener perfil');
+    }
+  }
+
+  async updateProfile(data: any): Promise<User> {
+    try {
+      const response = await apiClient.put('/auth/profile', data);
+      const updatedUser = response.data.data;
+      
+      // Actualizar usuario en localStorage
+      this.setUser(updatedUser);
+      
+      return updatedUser;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Error al actualizar perfil');
     }
   }
 

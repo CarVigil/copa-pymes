@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useEquipos } from "../hooks/useEquipos";
+import { usePermissions } from "../hooks/usePermissions";
+import { ProtectedAction } from "../components/common/ProtectedAction";
 import { ModalAgregarEquipo } from "../components/modals/ModalAgregarEquipo";
 import { Equipo } from "../types";
 import "./Page.css";
@@ -15,6 +17,8 @@ export const EquiposPage: React.FC = () => {
     eliminarEquipo,
     isCreating,
   } = useEquipos();
+  
+  const { canCreate, canEdit, canDelete } = usePermissions();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [equipoEnEdicion, setEquipoEnEdicion] = useState<Equipo | null>(null);
@@ -59,9 +63,11 @@ export const EquiposPage: React.FC = () => {
         <button className="btn btn-primary" onClick={refetch}>
           🔄 Actualizar
         </button>
-        <button className="btn btn-success" onClick={handleAdd}>
-          ➕ Agregar Equipo
-        </button>
+        <ProtectedAction resource="equipos" action="create">
+          <button className="btn btn-success" onClick={handleAdd}>
+            ➕ Agregar Equipo
+          </button>
+        </ProtectedAction>
       </div>
 
       {loading && <p>Cargando...</p>}
@@ -111,8 +117,17 @@ export const EquiposPage: React.FC = () => {
                   )}
                 </td>
                 <td>
-                  <button className="btn-icon btn-edit" onClick={() => handleEdit(equipo)}>✏️</button>
-                  <button className="btn-icon btn-delete" onClick={() => eliminarEquipo(equipo.id!)}>🗑️</button>
+                  <ProtectedAction resource="equipos" action="edit">
+                    <button className="btn-icon btn-edit" onClick={() => handleEdit(equipo)}>✏️</button>
+                  </ProtectedAction>
+                  <ProtectedAction resource="equipos" action="delete">
+                    <button className="btn-icon btn-delete" onClick={() => eliminarEquipo(equipo.id!)}>🗑️</button>
+                  </ProtectedAction>
+                  {!canEdit('equipos') && !canDelete('equipos') && (
+                    <span className="text-muted" style={{fontSize: '0.85rem'}}>
+                      👁️ Solo lectura
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}

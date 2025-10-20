@@ -2,10 +2,13 @@ import React from 'react';
 import { useJugadores } from '../hooks/useJugadores';
 import { Loading } from '../components/common/Loading';
 import { ErrorMessage } from '../components/common/ErrorMessage';
+import { usePermissions } from '../hooks/usePermissions';
+import { ProtectedAction } from '../components/common/ProtectedAction';
 import './Page.css';
 
 export const JugadoresPage: React.FC = () => {
   const { jugadores, loading, error, refetch } = useJugadores();
+  const { canCreate, canEdit, canDelete } = usePermissions();
 
   if (loading) {
     return <Loading message="Cargando jugadores..." />;
@@ -23,16 +26,28 @@ export const JugadoresPage: React.FC = () => {
     <div className="page">
       <div className="page-header">
         <h1>🏃‍♂️ Gestión de Jugadores</h1>
-        <p>Administra todos los jugadores registrados en el sistema</p>
+        <p>
+          {canEdit('jugadores') || canCreate('jugadores') 
+            ? 'Administra todos los jugadores registrados en el sistema'
+            : 'Consulta la información de los jugadores registrados'}
+        </p>
       </div>
 
       <div className="actions">
         <button className="btn btn-primary" onClick={refetch}>
           🔄 Actualizar Lista
         </button>
-        <button className="btn btn-success">
-          ➕ Agregar Jugador
-        </button>
+        <ProtectedAction resource="jugadores" action="create">
+          <button className="btn btn-success">
+            ➕ Agregar Jugador
+          </button>
+        </ProtectedAction>
+        
+        {!canCreate('jugadores') && !canEdit('jugadores') && !canDelete('jugadores') && (
+          <div className="read-only-notice">
+            👁️ Modo solo lectura
+          </div>
+        )}
       </div>
 
       {jugadores && jugadores.length > 0 ? (
@@ -53,7 +68,9 @@ export const JugadoresPage: React.FC = () => {
                   <th>DNI</th>
                   <th>Email</th>
                   <th>Fecha de Nacimiento</th>
-                  <th>Acciones</th>
+                  {(canEdit('jugadores') || canDelete('jugadores')) && (
+                    <th>Acciones</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -68,14 +85,20 @@ export const JugadoresPage: React.FC = () => {
                     <td className="dni">{jugador.dni}</td>
                     <td className="email">{jugador.email}</td>
                     <td className="fecha">{formatFecha(jugador.fecha_nacimiento)}</td>
-                    <td className="acciones">
-                      <button className="btn-icon btn-edit" title="Editar">
-                        ✏️
-                      </button>
-                      <button className="btn-icon btn-delete" title="Eliminar">
-                        🗑️
-                      </button>
-                    </td>
+                    {(canEdit('jugadores') || canDelete('jugadores')) && (
+                      <td className="acciones">
+                        <ProtectedAction resource="jugadores" action="edit">
+                          <button className="btn-icon btn-edit" title="Editar">
+                            ✏️
+                          </button>
+                        </ProtectedAction>
+                        <ProtectedAction resource="jugadores" action="delete">
+                          <button className="btn-icon btn-delete" title="Eliminar">
+                            🗑️
+                          </button>
+                        </ProtectedAction>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

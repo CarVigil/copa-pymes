@@ -64,14 +64,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
+  const updateUser = (userData: Partial<User>): void => {
+    if (user) {
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      authService.setUser(updatedUser);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     token,
     login,
     logout,
+    updateUser,
     isLoading,
     isAuthenticated: !!token && !!user,
-    isAdmin: user?.role === 'admin'
+    isAdmin: user?.role === 'administrador'
   };
 
   return (

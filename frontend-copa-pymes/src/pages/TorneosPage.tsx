@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useTorneos } from "../hooks/useTorneos";
+import { usePermissions } from "../hooks/usePermissions";
+import { ProtectedAction } from "../components/common/ProtectedAction";
 import { ModalAgregarTorneo } from "../components/modals/ModalAgregarTorneo";
 import { ModalEditarTorneo } from "../components/modals/ModalEditarTorneo";
 import { Loading } from "../components/common/Loading";
@@ -18,6 +20,8 @@ export const TorneosPage: React.FC = () => {
     eliminarTorneo,
     isCreating,
   } = useTorneos();
+  
+  const { canCreate, canEdit, canDelete } = usePermissions();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalEditarOpen, setIsModalEditarOpen] = useState(false);
@@ -127,15 +131,17 @@ export const TorneosPage: React.FC = () => {
         <button className="btn btn-primary" onClick={refetch}>
           🔄 Actualizar Lista
         </button>
-        <button
-          className="btn btn-success"
-          onClick={() => {
-            setTorneoEnEdicion(null);
-            setIsModalOpen(true);
-          }}
-        >
-          ➕ Agregar Torneo
-        </button>
+        <ProtectedAction resource="torneos" action="create">
+          <button
+            className="btn btn-success"
+            onClick={() => {
+              setTorneoEnEdicion(null);
+              setIsModalOpen(true);
+            }}
+          >
+            ➕ Agregar Torneo
+          </button>
+        </ProtectedAction>
       </div>
 
       <ModalAgregarTorneo
@@ -219,20 +225,29 @@ export const TorneosPage: React.FC = () => {
                     <td>{formatFecha(torneo.fecha_fin)}</td>
                     <td>{getEstadoBadge(torneo.estado)}</td>
                     <td>
-                      <button
-                        className="btn-icon btn-edit"
-                        onClick={() => handleEditarTorneo(torneo)}
-                        title="Editar"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        className="btn-icon btn-delete"
-                        onClick={() => handleEliminarTorneo(torneo.id)}
-                        title="Eliminar"
-                      >
-                        🗑️
-                      </button>
+                      <ProtectedAction resource="torneos" action="edit">
+                        <button
+                          className="btn-icon btn-edit"
+                          onClick={() => handleEditarTorneo(torneo)}
+                          title="Editar"
+                        >
+                          ✏️
+                        </button>
+                      </ProtectedAction>
+                      <ProtectedAction resource="torneos" action="delete">
+                        <button
+                          className="btn-icon btn-delete"
+                          onClick={() => handleEliminarTorneo(torneo.id)}
+                          title="Eliminar"
+                        >
+                          🗑️
+                        </button>
+                      </ProtectedAction>
+                      {!canEdit('torneos') && !canDelete('torneos') && (
+                        <span className="text-muted" style={{fontSize: '0.85rem'}}>
+                          👁️ Solo lectura
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
