@@ -46,8 +46,18 @@ router.post('/', requireManagementPermissions, UsuarioController.create);
 // Otros: solo su propio perfil (se maneja en el controlador)
 router.put('/:id', UsuarioController.update);
 
+// PUT /usuarios/:id/equipo - Asignar jugador a un equipo
+// Solo administradores y gestores pueden hacerlo
+router.put('/:id/equipo', requireRole([UsuarioRole.ADMINISTRADOR, UsuarioRole.GESTOR]), UsuarioController.assignToEquipo);
+
+
 // DELETE /usuarios/:id - Eliminar usuario
 // Solo administradores
 router.delete('/:id', requireAdministrador, UsuarioController.delete);
+
+// DELETE /usuarios/:id/equipo - Quitar jugador del equipo
+// Solo administradores y gestores
+router.delete('/:id/equipo', requireRole([UsuarioRole.ADMINISTRADOR, UsuarioRole.GESTOR]), UsuarioController.removeFromEquipo);
+
 
 export { router as usuarioRoutes };

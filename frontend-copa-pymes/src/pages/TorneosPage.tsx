@@ -134,7 +134,7 @@ export const TorneosPage: React.FC = () => {
             setIsModalOpen(true);
           }}
         >
-          ➕ Agregar Torneo
+          ➕ Crear Torneo
         </button>
       </div>
 

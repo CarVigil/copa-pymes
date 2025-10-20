@@ -70,7 +70,8 @@ export class UsuarioFactory {
         const jugador = usuario as Jugador;
         if (data.posicion) jugador.posicion = data.posicion;
         if (data.numero_camiseta) jugador.numero_camiseta = data.numero_camiseta;
-        if (data.equipo_id) jugador.equipo_id = data.equipo_id;
+        // Asignar equipo si se proporciona una instancia de Equipo
+        if ((data as any).equipo) jugador.equipo = (data as any).equipo;
         break;
 
       default:
