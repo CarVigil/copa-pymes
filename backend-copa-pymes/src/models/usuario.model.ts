@@ -1,6 +1,8 @@
 import { BaseModel } from '../shared/db/baseModel.model';
 import { Entity, Property, Enum, BeforeCreate, BeforeUpdate } from '@mikro-orm/core';
 import * as bcrypt from 'bcryptjs';
+import { ManyToOne } from '@mikro-orm/core';
+import { Equipo } from './equipo.model';
 
 export enum UsuarioRole {
   ADMINISTRADOR = 'administrador',
@@ -141,6 +143,6 @@ export class Jugador extends Usuario {
   @Property({ nullable: true })
   numero_camiseta?: number;
 
-  @Property({ nullable: true })
-  equipo_id?: number;
+  @ManyToOne(() => Equipo, { nullable: true })
+  equipo?: Equipo;
 }

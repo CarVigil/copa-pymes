@@ -2,12 +2,19 @@ import { MikroORM } from "@mikro-orm/core";
 import { SqlHighlighter } from "@mikro-orm/sql-highlighter";
 import { MySqlDriver } from "@mikro-orm/mysql";
 
+// Configuración de base de datos desde variables de entorno o valores por defecto
+const DB_HOST = process.env.DB_HOST || 'localhost';
+const DB_PORT = process.env.DB_PORT || '3306';
+const DB_USER = process.env.DB_USER || 'root';
+const DB_PASSWORD = process.env.DB_PASSWORD || ''; // Vacío por defecto para MySQL local sin contraseña
+const DB_NAME = process.env.DB_NAME || 'copa_pymes';
+
 const config = {
   entities: ["dist/models/**/*.js"],
   entitiesTs: ["src/models/**/*.ts"],
   discoveryWarnWhenNoEntities: false,
-  dbName: "copa_pymes",
-  clientUrl: "mysql://root:@localhost:3306/copa_pymes",
+  dbName: DB_NAME,
+  clientUrl: `mysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`,
   driver: MySqlDriver,
 
   highlighter: new SqlHighlighter(),

@@ -131,17 +131,15 @@ export const TorneosPage: React.FC = () => {
         <button className="btn btn-primary" onClick={refetch}>
           🔄 Actualizar Lista
         </button>
-        <ProtectedAction resource="torneos" action="create">
-          <button
-            className="btn btn-success"
-            onClick={() => {
-              setTorneoEnEdicion(null);
-              setIsModalOpen(true);
-            }}
-          >
-            ➕ Agregar Torneo
-          </button>
-        </ProtectedAction>
+        <button
+          className="btn btn-success"
+          onClick={() => {
+            setTorneoEnEdicion(null);
+            setIsModalOpen(true);
+          }}
+        >
+          ➕ Crear Torneo
+        </button>
       </div>
 
       <ModalAgregarTorneo
