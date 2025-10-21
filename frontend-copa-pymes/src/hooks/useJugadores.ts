@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
+import { Jugador, CreateJugadorRequest, UpdateJugadorRequest } from '../types';
 import { jugadorService } from '../services/jugadorService';
-import { Jugador, ApiResponse } from '../types';
 
 export const useJugadores = () => {
   const [jugadores, setJugadores] = useState<Jugador[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const fetchJugadores = async () => {
     try {
@@ -14,33 +14,12 @@ export const useJugadores = () => {
       const response = await jugadorService.getJugadores();
       if (response.success && response.data) {
         setJugadores(response.data);
-      } else {
-        setError(response.message || 'Error al cargar jugadores');
       }
-    } catch (err) {
-      setError('❌ No se pudieron cargar los jugadores');
-      console.error('Error:', err);
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar jugadores');
+      console.error('Error fetching jugadores:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const createJugador = async (jugadorData: any) => {
-    try {
-      setError('');
-      const response = await jugadorService.createJugador(jugadorData);
-      if (response.success && response.data) {
-        setJugadores(prev => [...prev, response.data!]);
-        return { success: true, data: response.data };
-      } else {
-        setError(response.message || 'Error al crear jugador');
-        return { success: false, error: response.message };
-      }
-    } catch (err) {
-      const errorMsg = 'Error al crear jugador';
-      setError(errorMsg);
-      console.error('Error:', err);
-      return { success: false, error: errorMsg };
     }
   };
 
@@ -48,11 +27,53 @@ export const useJugadores = () => {
     fetchJugadores();
   }, []);
 
+  const createJugador = async (jugadorData: CreateJugadorRequest) => {
+    try {
+      const response = await jugadorService.createJugador(jugadorData);
+      if (response.success) {
+        return { success: true, data: response.data };
+      }
+      return { success: false, error: response.message || 'Error al crear jugador' };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error al crear jugador' };
+    }
+  };
+
+  const updateJugador = async (id: number, jugadorData: UpdateJugadorRequest) => {
+    try {
+      const response = await jugadorService.updateJugador(id, jugadorData);
+      if (response.success) {
+        return { success: true, data: response.data };
+      }
+      return { success: false, error: response.message || 'Error al actualizar jugador' };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error al actualizar jugador' };
+    }
+  };
+
+  const deleteJugador = async (id: number) => {
+    try {
+      const response = await jugadorService.deleteJugador(id);
+      if (response.success) {
+        return { success: true };
+      }
+      return { success: false, error: response.message || 'Error al eliminar jugador' };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error al eliminar jugador' };
+    }
+  };
+
+  const refetch = async () => {
+    await fetchJugadores();
+  };
+
   return {
     jugadores,
     loading,
     error,
-    refetch: fetchJugadores,
+    refetch,
     createJugador,
+    updateJugador,
+    deleteJugador,
   };
 };
