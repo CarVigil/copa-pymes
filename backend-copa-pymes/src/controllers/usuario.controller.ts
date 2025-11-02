@@ -1,7 +1,9 @@
-import { Request, Response } from 'express';
-import { getORM, checkConnection } from '../shared/db/mikro-orm.config';
-import { Usuario, UsuarioRole } from '../models/usuario.model';
-import { UsuarioFactory, CreateUsuarioData } from '../models/usuarioFactory';
+import { Request, Response } from "express";
+import { getORM, checkConnection } from "../shared/db/mikro-orm.config";
+import { Usuario, UsuarioRole } from "../models/usuario.model";
+import { Jugador } from "../models/usuario.model";
+import { Equipo } from "../models/equipo.model";
+import { UsuarioFactory, CreateUsuarioData } from "../models/usuarioFactory";
 
 // Función auxiliar para reintentar operaciones con base de datos
 const retryDatabaseOperation = async <T>(
@@ -72,28 +74,28 @@ export class UsuarioController {
     }
   }
 
-    // Obtener usuarios por rol
-    static async getByRole(req: Request, res: Response): Promise<void> {
-        try {
-            const { role } = req.params;
-            const currentUser = (req as any).user; // Usuario autenticado del token
+  // Obtener usuarios por rol
+  static async getByRole(req: Request, res: Response): Promise<void> {
+    try {
+      const { role } = req.params;
+      const currentUser = (req as any).user; // Usuario autenticado del token
 
       if (!Object.values(UsuarioRole).includes(role as UsuarioRole)) {
         res.status(400).json({
           success: false,
                     message: 'Rol inválido'
-                });
-                return;
-            }
+        });
+        return;
+      }
 
-            // Solo administradores pueden ver usuarios de roles distintos a 'jugador'
+      // Solo administradores pueden ver usuarios de roles distintos a 'jugador'
             if (role !== UsuarioRole.JUGADOR && currentUser.role !== UsuarioRole.ADMINISTRADOR) {
-                res.status(403).json({
-                    success: false,
+        res.status(403).json({
+          success: false,
                     message: 'No tienes permisos para ver usuarios de este rol'
-                });
-                return;
-            }
+        });
+        return;
+      }
 
       const result = await retryDatabaseOperation(async () => {
         const orm = getORM();
@@ -633,51 +635,225 @@ export class UsuarioController {
     }
   }
 
-  static async assignToEquipo(req: Request, res: Response): Promise<void> {
+  static async getJugadores(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      const { equipoId } = req.body;
-
-      if (!equipoId) {
-        res.status(400).json({
-          success: false,
-          message: "Debe especificarse el ID del equipo",
-        });
-        return;
-      }
+      const { sinEquipo, equipoId, posicion, activo } = req.query;
 
       const result = await retryDatabaseOperation(async () => {
         const orm = getORM();
         const em = orm.em.fork();
 
-        const jugador = await em.findOne(Usuario, { id: parseInt(id) });
-        if (!jugador) throw new Error("Jugador no encontrado");
-        if (jugador.role !== UsuarioRole.JUGADOR)
-          throw new Error("Solo los jugadores pueden asignarse a equipos");
+        // Construcción dinámica del filtro
+        let where: any = {};
 
-        const equipo = await em.findOne("Equipo", { id: parseInt(equipoId) });
-        if (!equipo) throw new Error("Equipo no encontrado");
+        // Filtro: jugadores sin equipo o de otros equipos
+        if (sinEquipo === "true") {
+          if (equipoId) {
+            // Jugadores sin equipo O con equipo diferente al especificado
+            where.$or = [
+              { equipo: null },
+              { equipo: { $ne: parseInt(equipoId as string) } },
+            ];
+          } else {
+            // Solo jugadores sin equipo
+            where.equipo = null;
+          }
+        } else if (equipoId) {
+          // Filtro: jugadores de un equipo específico
+          where.equipo = parseInt(equipoId as string);
+        }
 
-        // @ts-ignore → si `equipo` no está tipado en Usuario, se ignora
-        jugador.equipo = equipo;
+        // Filtro: por posición
+        if (posicion) {
+          where.posicion = posicion as string;
+        }
 
-        await em.persistAndFlush(jugador);
-        return jugador.toJSON();
+        // Filtro: por estado activo/inactivo
+        if (activo !== undefined) {
+          where.activo = activo === "true";
+        }
+
+        // Usar Jugador en lugar de Usuario y corregir populate
+        const jugadores = await em.find(Jugador, where, {
+          populate: ["equipo"], // Como array de strings
+          orderBy: { apellido: "ASC", nombre: "ASC" },
+        });
+
+        return jugadores.map((jugador) => jugador.toJSON());
       });
 
       res.status(200).json({
         success: true,
         data: result,
-        message: "Jugador asignado al equipo exitosamente",
+        message: "Jugadores obtenidos exitosamente",
       });
-    } catch (error: any) {
-      console.error("Error al asignar jugador a equipo:", error.message);
+    } catch (error) {
+      console.error("Error al obtener jugadores:", error);
       res.status(500).json({
         success: false,
-        message: error.message || "Error interno del servidor",
+        data: null,
+        message: "Error interno del servidor",
       });
     }
   }
+
+  // Método corregido: getJugadoresByEquipo
+  static async getJugadoresByEquipo(
+    req: Request,
+    res: Response
+  ): Promise<void> {
+    try {
+      const { equipoId } = req.params;
+
+      const result = await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork();
+
+        // Verificar que el equipo existe
+        const equipo = await em.findOne("Equipo", { id: parseInt(equipoId) });
+        if (!equipo) {
+          throw new Error("Equipo no encontrado");
+        }
+
+        // Usar Jugador en lugar de Usuario
+        const jugadores = await em.find(
+          Jugador,
+          {
+            equipo: parseInt(equipoId),
+          },
+          {
+            populate: ["equipo"],
+            orderBy: { numero_camiseta: "ASC", apellido: "ASC" },
+          }
+        );
+
+        return jugadores.map((jugador) => jugador.toJSON());
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: "Jugadores del equipo obtenidos exitosamente",
+      });
+    } catch (error: any) {
+      console.error("Error al obtener jugadores del equipo:", error);
+
+      if (error.message === "Equipo no encontrado") {
+        res.status(404).json({
+          success: false,
+          data: null,
+          message: error.message,
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        data: null,
+        message: "Error interno del servidor",
+      });
+    }
+  }
+
+  // Método corregido: getJugadoresStats
+  static async getJugadoresStats(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork();
+
+        // Usar Jugador en lugar de Usuario
+        const jugadores = await em.find(
+          Jugador,
+          {},
+          {
+            populate: ["equipo"],
+          }
+        );
+
+        const stats = {
+          total: jugadores.length,
+          conEquipo: jugadores.filter(
+            (j) => j.equipo !== null && j.equipo !== undefined
+          ).length,
+          sinEquipo: jugadores.filter(
+            (j) => j.equipo === null || j.equipo === undefined
+          ).length,
+          activos: jugadores.filter((j) => j.activo).length,
+          inactivos: jugadores.filter((j) => !j.activo).length,
+          porPosicion: {} as Record<string, number>,
+        };
+
+        // Contar por posición
+        jugadores.forEach((j) => {
+          if (j.posicion) {
+            stats.porPosicion[j.posicion] =
+              (stats.porPosicion[j.posicion] || 0) + 1;
+          }
+        });
+
+        return stats;
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: "Estadísticas de jugadores obtenidas exitosamente",
+      });
+    } catch (error) {
+      console.error("Error al obtener estadísticas de jugadores:", error);
+      res.status(500).json({
+        success: false,
+        data: null,
+        message: "Error interno del servidor",
+      });
+    }
+  }
+
+  static async assignToEquipo(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { equipoId } = req.body;
+
+    if (!equipoId) {
+      res.status(400).json({
+        success: false,
+        message: "Debe especificarse el ID del equipo",
+      });
+      return;
+    }
+
+    const result = await retryDatabaseOperation(async () => {
+      const orm = getORM();
+      const em = orm.em.fork();
+
+      // Usar Jugador en lugar de Usuario
+      const jugador = await em.findOne(Jugador, { id: parseInt(id) });
+      if (!jugador) throw new Error("Jugador no encontrado");
+
+      // Usar Equipo en lugar de "Equipo" como string
+      const equipo = await em.findOne(Equipo, { id: parseInt(equipoId) });
+      if (!equipo) throw new Error("Equipo no encontrado");
+
+      jugador.equipo = equipo;
+
+      await em.persistAndFlush(jugador);
+      return jugador.toJSON();
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
+      message: "Jugador asignado al equipo exitosamente",
+    });
+  } catch (error: any) {
+    console.error("Error al asignar jugador a equipo:", error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Error interno del servidor",
+    });
+  }
+}
 
   static async removeFromEquipo(req: Request, res: Response): Promise<void> {
     try {
@@ -687,13 +863,11 @@ export class UsuarioController {
         const orm = getORM();
         const em = orm.em.fork();
 
-        const jugador = await em.findOne(Usuario, { id: parseInt(id) });
+        // Usar Jugador en lugar de Usuario
+        const jugador = await em.findOne(Jugador, { id: parseInt(id) });
         if (!jugador) throw new Error("Jugador no encontrado");
-        if (jugador.role !== UsuarioRole.JUGADOR)
-          throw new Error("Solo los jugadores pueden estar en equipos");
 
-        // @ts-ignore: ignoramos si `equipo` no está definido en el tipo
-        jugador.equipo = null;
+        jugador.equipo = undefined;
 
         await em.persistAndFlush(jugador);
         return jugador.toJSON();

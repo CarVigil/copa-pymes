@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { getORM, checkConnection } from "../shared/db/mikro-orm.config";
 import { Equipo } from "../models/equipo.model";
+import { Jugador } from "../models/usuario.model";
 
 // Función auxiliar para reintentar operaciones con base de datos
 const retryDatabaseOperation = async <T>(
@@ -217,10 +218,7 @@ export class EquipoController {
 
         if (conditions.length > 0) {
           const existingEquipo = await em.findOne(Equipo, {
-            $and: [
-              { id: { $ne: parseInt(id) } },
-              { $or: conditions }
-            ]
+            $and: [{ id: { $ne: parseInt(id) } }, { $or: conditions }],
           });
 
           if (existingEquipo) {
@@ -361,6 +359,131 @@ export class EquipoController {
         success: false,
         data: null,
         message: "Error interno del servidor",
+      });
+    }
+  }
+
+  // GET /api/equipos/:id/jugadores - Obtener todos los jugadores de un equipo
+  static async getJugadoresDelEquipo(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const orm = getORM();
+      const em = orm.em.fork();
+      // Verificar que el equipo existe
+      const equipo = await em.findOne(Equipo, { id: Number(id) });
+      if (!equipo) {
+        return res.status(404).json({ message: "Equipo no encontrado" });
+      }
+
+      // Buscar todos los jugadores de este equipo
+      const jugadores = await em.find(
+        Jugador,
+        { equipo: Number(id) },
+        {
+          populate: ["equipo"],
+        }
+      );
+
+      return res.status(200).json(jugadores);
+    } catch (error: any) {
+      console.error("Error al obtener jugadores del equipo:", error);
+      return res.status(500).json({
+        message: "Error al obtener los jugadores del equipo",
+        error: error.message,
+      });
+    }
+  }
+
+  // POST /api/equipos/:id/jugadores - Agregar un jugador al equipo
+  static async agregarJugadorAlEquipo(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { jugadorId } = req.body;
+      const orm = getORM();
+      const em = orm.em.fork();
+      if (!jugadorId) {
+        return res
+          .status(400)
+          .json({ message: "El ID del jugador es requerido" });
+      }
+
+      // Verificar que el equipo existe
+      const equipo = await em.findOne(Equipo, { id: Number(id) });
+      if (!equipo) {
+        return res.status(404).json({ message: "Equipo no encontrado" });
+      }
+
+      // Verificar que el jugador existe
+      const jugador = await em.findOne(Jugador, { id: Number(jugadorId) });
+      if (!jugador) {
+        return res.status(404).json({ message: "Jugador no encontrado" });
+      }
+
+      // Verificar si el jugador ya está en este equipo
+      if (jugador.equipo?.id === equipo.id) {
+        return res.status(400).json({
+          message: "El jugador ya pertenece a este equipo",
+        });
+      }
+
+      // Asignar el jugador al equipo
+      jugador.equipo = equipo;
+      await em.persistAndFlush(jugador);
+
+      // Devolver el jugador actualizado con el equipo poblado
+      await em.populate(jugador, ["equipo"]);
+
+      return res.status(200).json({
+        message: "Jugador agregado al equipo exitosamente",
+        jugador,
+      });
+    } catch (error: any) {
+      console.error("Error al agregar jugador al equipo:", error);
+      return res.status(500).json({
+        message: "Error al agregar el jugador al equipo",
+        error: error.message,
+      });
+    }
+  }
+
+  // DELETE /api/equipos/:id/jugadores/:jugadorId - Quitar un jugador del equipo
+  static async quitarJugadorDelEquipo(req: Request, res: Response) {
+    try {
+      const { id, jugadorId } = req.params;
+      const orm = getORM();
+      const em = orm.em.fork();
+      // Verificar que el equipo existe
+      const equipo = await em.findOne(Equipo, { id: Number(id) });
+      if (!equipo) {
+        return res.status(404).json({ message: "Equipo no encontrado" });
+      }
+
+      // Verificar que el jugador existe
+      const jugador = await em.findOne(Jugador, { id: Number(jugadorId) });
+      if (!jugador) {
+        return res.status(404).json({ message: "Jugador no encontrado" });
+      }
+
+      // Verificar que el jugador pertenece a este equipo
+      if (jugador.equipo?.id !== equipo.id) {
+        return res.status(400).json({
+          message: "El jugador no pertenece a este equipo",
+        });
+      }
+
+      // Quitar el jugador del equipo (establecer equipo como null)
+      jugador.equipo = undefined;
+      await em.persistAndFlush(jugador);
+
+      return res.status(200).json({
+        message: "Jugador quitado del equipo exitosamente",
+        jugador,
+      });
+    } catch (error: any) {
+      console.error("Error al quitar jugador del equipo:", error);
+      return res.status(500).json({
+        message: "Error al quitar el jugador del equipo",
+        error: error.message,
       });
     }
   }

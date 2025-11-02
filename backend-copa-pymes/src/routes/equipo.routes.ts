@@ -16,4 +16,16 @@ router.delete('/:id', authenticateToken, requireJugadorOrAdmin, EquipoController
 router.delete('/:id/permanent', authenticateToken, requireAdmin, EquipoController.deletePermanent);
 router.patch('/:id/reactivate', authenticateToken, requireAdmin, EquipoController.reactivate);
 
+
+// Rutas para gestión de jugadores en equipos
+router.get('/:id/jugadores', authenticateToken, requireAdmin, EquipoController.getJugadoresDelEquipo);
+
+router.post(
+  '/:id/jugadores', authenticateToken, requireAdmin, EquipoController.agregarJugadorAlEquipo
+);
+
+router.delete(
+  '/:id/jugadores/:jugadorId', authenticateToken, requireAdmin, EquipoController.quitarJugadorDelEquipo
+);
+
 export default router;
