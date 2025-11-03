@@ -1,75 +1,71 @@
-import React, { useState, useEffect } from 'react';
+// src/App.tsx
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Header } from './components/layout/Header';
 import { HomePage } from './pages/HomePage';
 import { JugadoresPage } from './pages/JugadoresPage';
 import { TorneosPage } from './pages/TorneosPage';
 import { EquiposPage } from './pages/EquiposPage';
+import { EquipoDetallePage } from './pages/EquipoDetallePage';
 import LoginPage from './pages/LoginPage';
 import ProfilePage from './pages/ProfilePage';
 import { Loading } from './components/common/Loading';
 import './styles/global.css';
 
-type PageType = 'home' | 'jugadores' | 'torneos' | 'login' | 'equipos' | 'profile';
-
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
     </AuthProvider>
   );
 }
 
-function AppContent() {
-  const { isAuthenticated, isLoading, user } = useAuth();
-  const [currentPage, setCurrentPage] = useState<PageType>('home');
-
-  useEffect(() => {
-    if (!isAuthenticated && !isLoading) {
-      setCurrentPage('login');
-    } else if (isAuthenticated && currentPage === 'login') {
-      setCurrentPage('home');
-    }
-  }, [isAuthenticated, isLoading, currentPage]);
+function AppRoutes() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   if (isLoading) {
     return <Loading />;
   }
 
   if (!isAuthenticated) {
-    return <LoginPage onLoginSuccess={() => setCurrentPage('home')} />;
+    return <LoginPage />;
   }
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return <HomePage onNavigateToJugadores={() => setCurrentPage('jugadores')} />;
-      case 'jugadores':
-        return <JugadoresPage />;
-      case 'torneos':
-        return <TorneosPage />;
-      case 'equipos':
-        return <EquiposPage />;
-      case 'profile':
-        return <ProfilePage />;
-      default:
-        return <HomePage onNavigateToJugadores={() => setCurrentPage('jugadores')} />;
-    }
-  };
+  const path = location.pathname;
+  let currentPage = 'home';
+  if (path.startsWith('/jugadores')) currentPage = 'jugadores';
+  else if (path.startsWith('/torneos')) currentPage = 'torneos';
+  else if (path === '/equipos') currentPage = 'equipos';
+  else if (path.startsWith('/equipos/')) currentPage = 'equipo-detalle';
+  else if (path.startsWith('/perfil')) currentPage = 'profile';
 
   return (
     <div className="app">
-      <Header 
-        title="🏆 Copa Pymes" 
-        onNavigateHome={() => setCurrentPage('home')}
-        onNavigateJugadores={() => setCurrentPage('jugadores')}
-        onNavigateTorneos={() => setCurrentPage('torneos')}
-        onNavigateEquipos={() => setCurrentPage('equipos')}
-        onNavigateProfile={() => setCurrentPage('profile')}
+      <Header
+        title="🏆 Copa Pymes"
         currentPage={currentPage}
+        onNavigateHome={() => navigate('/')}
+        onNavigateJugadores={() => navigate('/jugadores')}
+        onNavigateTorneos={() => navigate('/torneos')}
+        onNavigateEquipos={() => navigate('/equipos')}
+        onNavigateProfile={() => navigate('/perfil')}
       />
+
       <main className="main-content">
-        {renderPage()}
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/jugadores" element={<JugadoresPage />} />
+          <Route path="/torneos" element={<TorneosPage />} />
+          <Route path="/equipos" element={<EquiposPage />} />
+          <Route path="/equipos/:id" element={<EquipoDetallePage />} />
+          <Route path="/perfil" element={<ProfilePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
     </div>
   );

@@ -74,50 +74,80 @@ export class UsuarioController {
     }
   }
 
-  // Obtener usuarios por rol
-  static async getByRole(req: Request, res: Response): Promise<void> {
-    try {
-      const { role } = req.params;
-      const currentUser = (req as any).user; // Usuario autenticado del token
+// Obtener usuarios por rol
+static async getByRole(req: Request, res: Response): Promise<void> {
+  try {
+    const { role } = req.params;
+    const { equipoId, sinEquipo, activo, posicion } = req.query;
+    const currentUser = (req as any).user;
 
-      if (!Object.values(UsuarioRole).includes(role as UsuarioRole)) {
-        res.status(400).json({
-          success: false,
-                    message: 'Rol inválido'
-        });
-        return;
-      }
+    if (!Object.values(UsuarioRole).includes(role as UsuarioRole)) {
+      res.status(400).json({ success: false, message: 'Rol inválido' });
+      return;
+    }
 
       // Solo administradores pueden ver usuarios de roles distintos a 'jugador'
-            if (role !== UsuarioRole.JUGADOR && currentUser.role !== UsuarioRole.ADMINISTRADOR) {
-        res.status(403).json({
-          success: false,
-                    message: 'No tienes permisos para ver usuarios de este rol'
+    if (role !== UsuarioRole.JUGADOR && currentUser.role !== UsuarioRole.ADMINISTRADOR) {
+      res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para ver usuarios de este rol',
+      });
+      return;
+    }
+
+    const result = await retryDatabaseOperation(async () => {
+      const orm = getORM();
+      const em = orm.em.fork();
+
+      if (role === UsuarioRole.JUGADOR) {
+        const where: any = {};
+
+        if (sinEquipo === "true") {
+          if (equipoId) {
+            where.$or = [
+              { equipo: null },
+              { equipo: { $ne: parseInt(equipoId as string, 10) } },
+            ];
+          } else {
+            where.equipo = null;
+          }
+        } else if (equipoId) {
+          where.equipo = parseInt(equipoId as string, 10);
+        }
+
+        if (posicion) where.posicion = posicion;
+
+        if (activo !== undefined) where.activo = activo === "true";
+
+        const jugadores = await em.find(Jugador, where, {
+          populate: ['equipo'],
+          orderBy: { apellido: 'ASC', nombre: 'ASC' },
         });
-        return;
+
+        return jugadores.map((j) => j.toJSON());
       }
 
-      const result = await retryDatabaseOperation(async () => {
-        const orm = getORM();
-        const em = orm.em.fork();
-        const usuarios = await em.find(Usuario, { role: role as UsuarioRole });
-                return usuarios.map(user => user.toJSON());
+      // 🔹 Otros roles se consultan normalmente
+      const usuarios = await em.find(Usuario, { role: role as UsuarioRole }, {
+        orderBy: { apellido: 'ASC', nombre: 'ASC' },
       });
+      return usuarios.map((u) => u.toJSON());
+    });
 
-      res.status(200).json({
-        success: true,
-        data: result,
-                message: `Usuarios con rol ${role} obtenidos exitosamente`
-      });
-    } catch (error) {
-            console.error('Error al obtener usuarios por rol:', error);
-      res.status(500).json({
-        success: false,
-        data: null,
-                message: 'Error interno del servidor'
-      });
-    }
+    res.status(200).json({
+      success: true,
+      data: result,
+      message: `Usuarios con rol ${role} obtenidos exitosamente`,
+    });
+  } catch (error) {
+    console.error('Error al obtener usuarios por rol:', error);
+    res.status(500).json({
+      success: false,
+      data: null,
+      message: 'Error interno del servidor',
+    });
   }
+}
 
   // Obtener usuario por ID
   static async getById(req: Request, res: Response): Promise<void> {
@@ -635,67 +665,54 @@ export class UsuarioController {
     }
   }
 
-  static async getJugadores(req: Request, res: Response): Promise<void> {
-    try {
-      const { sinEquipo, equipoId, posicion, activo } = req.query;
+static async getJugadores(req: Request, res: Response): Promise<void> {
+  try {
+    const { equipoId, sinEquipo, activo, posicion } = req.query;
 
-      const result = await retryDatabaseOperation(async () => {
-        const orm = getORM();
-        const em = orm.em.fork();
+    const result = await retryDatabaseOperation(async () => {
+      const orm = getORM();
+      const em = orm.em.fork();
 
-        // Construcción dinámica del filtro
-        let where: any = {};
+      const where: any = {};
 
-        // Filtro: jugadores sin equipo o de otros equipos
-        if (sinEquipo === "true") {
-          if (equipoId) {
-            // Jugadores sin equipo O con equipo diferente al especificado
-            where.$or = [
-              { equipo: null },
-              { equipo: { $ne: parseInt(equipoId as string) } },
-            ];
-          } else {
-            // Solo jugadores sin equipo
-            where.equipo = null;
-          }
-        } else if (equipoId) {
-          // Filtro: jugadores de un equipo específico
-          where.equipo = parseInt(equipoId as string);
+      if (sinEquipo === 'true') {
+        if (equipoId) {
+          where.$or = [
+            { equipo: null },
+            { equipo: { $ne: parseInt(equipoId as string, 10) } },
+          ];
+        } else {
+          where.equipo = null;
         }
+      } else if (equipoId) {
+        where.equipo = parseInt(equipoId as string, 10);
+      }
 
-        // Filtro: por posición
-        if (posicion) {
-          where.posicion = posicion as string;
-        }
+      if (posicion) where.posicion = posicion;
+      if (activo !== undefined) where.activo = activo === 'true';
 
-        // Filtro: por estado activo/inactivo
-        if (activo !== undefined) {
-          where.activo = activo === "true";
-        }
-
-        // Usar Jugador en lugar de Usuario y corregir populate
-        const jugadores = await em.find(Jugador, where, {
-          populate: ["equipo"], // Como array de strings
-          orderBy: { apellido: "ASC", nombre: "ASC" },
-        });
-
-        return jugadores.map((jugador) => jugador.toJSON());
+      const jugadores = await em.find(Jugador, where, {
+        populate: ['equipo'],
+        orderBy: { apellido: 'ASC', nombre: 'ASC' },
       });
 
-      res.status(200).json({
-        success: true,
-        data: result,
+      return jugadores.map((j) => j.toJSON());
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result,
         message: "Jugadores obtenidos exitosamente",
-      });
-    } catch (error) {
+    });
+  } catch (error) {
       console.error("Error al obtener jugadores:", error);
-      res.status(500).json({
-        success: false,
-        data: null,
+    res.status(500).json({
+      success: false,
+      data: null,
         message: "Error interno del servidor",
-      });
-    }
+    });
   }
+}
 
   // Método corregido: getJugadoresByEquipo
   static async getJugadoresByEquipo(

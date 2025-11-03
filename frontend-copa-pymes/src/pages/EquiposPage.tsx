@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useEquipos } from "../hooks/useEquipos";
 import { usePermissions } from "../hooks/usePermissions";
 import { ProtectedAction } from "../components/common/ProtectedAction";
@@ -7,6 +8,7 @@ import { Equipo } from "../types";
 import "./Page.css";
 
 export const EquiposPage: React.FC = () => {
+  const navigate = useNavigate();
   const {
     equipos,
     loading,
@@ -18,7 +20,7 @@ export const EquiposPage: React.FC = () => {
     isCreating,
   } = useEquipos();
   
-  const { canCreate, canEdit, canDelete } = usePermissions();
+  const { canEdit, canDelete } = usePermissions();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [equipoEnEdicion, setEquipoEnEdicion] = useState<Equipo | null>(null);
@@ -33,14 +35,16 @@ export const EquiposPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleGestionarJugadores = (equipoId: number) => {
+    navigate(`/equipos/${equipoId}`);
+  };
+
   const handleSubmit = async (data: Partial<Equipo>) => {
     if (equipoEnEdicion && equipoEnEdicion.id) {
       await actualizarEquipo(equipoEnEdicion.id, data);
     } else {
-      // Asegúrate de que los campos requeridos no sean undefined
       const { nombre, sigla, estado, escudo } = data;
       if (!nombre || !sigla || typeof estado === "undefined") {
-        // Puedes mostrar un error aquí si lo deseas
         return;
       }
       await crearEquipo({
@@ -83,63 +87,91 @@ export const EquiposPage: React.FC = () => {
 
       {equipos && equipos.length > 0 ? (
         <div className="table-container">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Sigla</th>
-              <th>Estado</th>
-              <th>Escudo</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {equipos.map((equipo) => (
-              <tr key={equipo.id}>
-                <td>{equipo.id}</td>
-                <td>{equipo.nombre}</td>
-                <td>{equipo.sigla}</td>
-                <td>
-                  <span
-                    className={`badge ${
-                      equipo.estado ? "badge-success" : "badge-danger"
-                    }`}
-                  >
-                    {equipo.estado ? "Activo" : "Inactivo"}
-                  </span>
-                </td>
-                <td>
-                  {equipo.escudo ? (
-                    <img src={equipo.escudo} alt="escudo" width="30" />
-                  ) : (
-                    "-"
-                  )}
-                </td>
-                <td>
-                  <ProtectedAction resource="equipos" action="edit">
-                    <button className="btn-icon btn-edit" onClick={() => handleEdit(equipo)}>✏️</button>
-                  </ProtectedAction>
-                  <ProtectedAction resource="equipos" action="delete">
-                    <button className="btn-icon btn-delete" onClick={() => eliminarEquipo(equipo.id!)}>🗑️</button>
-                  </ProtectedAction>
-                  {!canEdit('equipos') && !canDelete('equipos') && (
-                    <span className="text-muted" style={{fontSize: '0.85rem'}}>
-                      👁️ Solo lectura
-                    </span>
-                  )}
-                </td>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Sigla</th>
+                <th>Estado</th>
+                <th>Escudo</th>
+                <th>Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {equipos.map((equipo) => (
+                <tr key={equipo.id}>
+                  <td>{equipo.id}</td>
+                  <td>{equipo.nombre}</td>
+                  <td>{equipo.sigla}</td>
+                  <td>
+                    <span
+                      className={`badge ${
+                        equipo.estado ? "badge-success" : "badge-danger"
+                      }`}
+                    >
+                      {equipo.estado ? "Activo" : "Inactivo"}
+                    </span>
+                  </td>
+                  <td>
+                    {equipo.escudo ? (
+                      <img src={equipo.escudo} alt="escudo" width="30" />
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td>
+                    <div className="actions-group">
+                      {/* Botón para gestionar jugadores - siempre visible */}
+                      <button 
+                        className="btn-icon btn-info" 
+                        onClick={() => handleGestionarJugadores(equipo.id!)}
+                        title="Gestionar jugadores del equipo"
+                      >
+                        👥
+                      </button>
+                      
+                      {/* Botón editar - solo con permisos */}
+                      <ProtectedAction resource="equipos" action="edit">
+                        <button 
+                          className="btn-icon btn-edit" 
+                          onClick={() => handleEdit(equipo)}
+                          title="Editar equipo"
+                        >
+                          ✏️
+                        </button>
+                      </ProtectedAction>
+                      
+                      {/* Botón eliminar - solo con permisos */}
+                      <ProtectedAction resource="equipos" action="delete">
+                        <button 
+                          className="btn-icon btn-delete" 
+                          onClick={() => eliminarEquipo(equipo.id!)}
+                          title="Eliminar equipo"
+                        >
+                          🗑️
+                        </button>
+                      </ProtectedAction>
+                      
+                      {/* Mensaje de solo lectura */}
+                      {!canEdit('equipos') && !canDelete('equipos') && (
+                        <span className="text-muted" style={{fontSize: '0.85rem'}}>
+                          👁️ Solo lectura
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : (
         <div className="empty-state">
           <div className="empty-state-content">
             <h3>📋 No hay equipos registrados</h3>
             <p>Comienza agregando tu primer equipo al sistema</p>
-            <button className="btn btn-primary">
+            <button className="btn btn-primary" onClick={handleAdd}>
               ➕ Agregar Primer Equipo
             </button>
           </div>

@@ -10,6 +10,7 @@ interface HeaderProps {
   onNavigateTorneos?: () => void;
   onNavigateEquipos?: () => void;
   onNavigateProfile?: () => void;
+  onNavigateEquiposDetalle?: () => void;
   currentPage?: string;
 }
 
@@ -20,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateTorneos,
   onNavigateEquipos,
   onNavigateProfile,
+  onNavigateEquiposDetalle,
   currentPage,
 }) => {
   const { user, logout } = useAuth();
