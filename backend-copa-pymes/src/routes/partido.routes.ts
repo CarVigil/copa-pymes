@@ -11,6 +11,7 @@ router.get('/:id', authenticateToken, requireJugadorOrAdmin, PartidoController.g
 // Gestión (solo admins)
 router.post('/', authenticateToken, requireAdmin, PartidoController.create);
 router.put('/:id', authenticateToken, requireAdmin, PartidoController.update);
+router.put('/:id/resultado', authenticateToken, requireAdmin, PartidoController.actualizarResultado);
 router.delete('/:id', authenticateToken, requireAdmin, PartidoController.delete);
 
 export default router;

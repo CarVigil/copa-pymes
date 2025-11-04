@@ -384,7 +384,11 @@ export class EquipoController {
         }
       );
 
-      return res.status(200).json(jugadores);
+      return res.status(200).json({
+        success: true,
+        data: jugadores,
+        message: "Jugadores del equipo obtenidos exitosamente",
+      });
     } catch (error: any) {
       console.error("Error al obtener jugadores del equipo:", error);
       return res.status(500).json({
@@ -404,25 +408,45 @@ export class EquipoController {
       if (!jugadorId) {
         return res
           .status(400)
-          .json({ message: "El ID del jugador es requerido" });
+          .json({ 
+            success: false,
+            message: "El ID del jugador es requerido" 
+          });
       }
 
       // Verificar que el equipo existe
       const equipo = await em.findOne(Equipo, { id: Number(id) });
       if (!equipo) {
-        return res.status(404).json({ message: "Equipo no encontrado" });
+        return res.status(404).json({ 
+          success: false,
+          message: "Equipo no encontrado" 
+        });
       }
 
-      // Verificar que el jugador existe
-      const jugador = await em.findOne(Jugador, { id: Number(jugadorId) });
+      // Verificar que el jugador existe y cargar su equipo actual
+      const jugador = await em.findOne(Jugador, { id: Number(jugadorId) }, {
+        populate: ['equipo']
+      });
       if (!jugador) {
-        return res.status(404).json({ message: "Jugador no encontrado" });
+        return res.status(404).json({ 
+          success: false,
+          message: "Jugador no encontrado" 
+        });
       }
 
       // Verificar si el jugador ya está en este equipo
       if (jugador.equipo?.id === equipo.id) {
         return res.status(400).json({
+          success: false,
           message: "El jugador ya pertenece a este equipo",
+        });
+      }
+
+      // Verificar si el jugador ya pertenece a OTRO equipo
+      if (jugador.equipo) {
+        return res.status(400).json({
+          success: false,
+          message: `El jugador ya pertenece al equipo "${jugador.equipo.nombre}". Primero debe ser removido de ese equipo.`,
         });
       }
 
@@ -434,12 +458,14 @@ export class EquipoController {
       await em.populate(jugador, ["equipo"]);
 
       return res.status(200).json({
+        success: true,
+        data: jugador,
         message: "Jugador agregado al equipo exitosamente",
-        jugador,
       });
     } catch (error: any) {
       console.error("Error al agregar jugador al equipo:", error);
       return res.status(500).json({
+        success: false,
         message: "Error al agregar el jugador al equipo",
         error: error.message,
       });
@@ -476,13 +502,45 @@ export class EquipoController {
       await em.persistAndFlush(jugador);
 
       return res.status(200).json({
+        success: true,
+        data: jugador,
         message: "Jugador quitado del equipo exitosamente",
-        jugador,
       });
     } catch (error: any) {
       console.error("Error al quitar jugador del equipo:", error);
       return res.status(500).json({
         message: "Error al quitar el jugador del equipo",
+        error: error.message,
+      });
+    }
+  }
+
+  // GET /api/equipos/jugadores-disponibles - Obtener jugadores sin equipo asignado
+  static async getJugadoresDisponibles(req: Request, res: Response) {
+    try {
+      const result = await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork();
+
+        // Buscar jugadores activos sin equipo asignado
+        const jugadoresDisponibles = await em.find(Jugador, {
+          equipo: null,
+          activo: true,
+        });
+
+        return jugadoresDisponibles;
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: "Jugadores disponibles obtenidos exitosamente",
+      });
+    } catch (error: any) {
+      console.error("Error al obtener jugadores disponibles:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error al obtener los jugadores disponibles",
         error: error.message,
       });
     }

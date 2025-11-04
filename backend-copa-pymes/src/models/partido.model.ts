@@ -15,11 +15,11 @@ export class Partido {
   @ManyToOne(() => Torneo)
   torneo!: Torneo;
 
-  @ManyToOne(() => Equipo)
-  equipo1!: Equipo;
+  @ManyToOne(() => Equipo, { nullable: true })
+  equipo1?: Equipo;
 
-  @ManyToOne(() => Equipo)
-  equipo2!: Equipo;
+  @ManyToOne(() => Equipo, { nullable: true })
+  equipo2?: Equipo;
 
   @ManyToOne(() => Sede, { nullable: true })
   sede?: Sede;
@@ -35,4 +35,20 @@ export class Partido {
 
   @Property({ default: 'pendiente' })
   estado: string = 'pendiente'; // pendiente | en_juego | finalizado | suspendido
+
+  // Campos para manejo de llave/bracket del torneo
+  @Property({ nullable: true })
+  fase?: string; // octavos | cuartos | semifinal | final
+
+  @Property({ nullable: true })
+  numeroPartido?: number; // 1, 2, 3, 4 para octavos, etc.
+
+  @Property({ nullable: true })
+  equipoGanador?: number; // ID del equipo ganador (null si no hay resultado)
+
+  @ManyToOne(() => Partido, { nullable: true })
+  partidoSiguiente?: Partido; // Referencia al partido de la siguiente fase
+
+  @Property({ nullable: true })
+  posicionEnSiguiente?: number; // 1 o 2 (equipo1 o equipo2 en el siguiente partido)
 }

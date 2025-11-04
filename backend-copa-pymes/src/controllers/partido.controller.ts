@@ -157,4 +157,122 @@ export class PartidoController {
       res.status(500).json({ success: false, message: 'Error interno del servidor' });
     }
   }
+
+  // GET /api/torneos/:id/partidos - Obtener todos los partidos de un torneo
+  static async getPartidosByTorneo(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const result = await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork();
+        
+        const partidos = await em.find(
+          Partido,
+          { torneo: parseInt(id) },
+          { 
+            populate: ['equipo1', 'equipo2', 'partidoSiguiente'],
+            orderBy: { fase: 'ASC', numeroPartido: 'ASC' }
+          }
+        );
+        
+        return partidos;
+      });
+
+      res.status(200).json({ 
+        success: true, 
+        data: result,
+        message: 'Partidos del torneo obtenidos exitosamente' 
+      });
+    } catch (error) {
+      console.error('Error al obtener partidos del torneo:', error);
+      res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    }
+  }
+
+  // PUT /api/partidos/:id/resultado - Actualizar resultado del partido
+  static async actualizarResultado(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { golesEquipo1, golesEquipo2 } = req.body;
+
+      if (golesEquipo1 === undefined || golesEquipo2 === undefined) {
+        res.status(400).json({ 
+          success: false, 
+          message: 'Se requieren los goles de ambos equipos' 
+        });
+        return;
+      }
+
+      const result = await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork();
+        
+        const partido = await em.findOne(
+          Partido, 
+          { id: parseInt(id) },
+          { populate: ['equipo1', 'equipo2', 'partidoSiguiente'] }
+        );
+
+        if (!partido) {
+          throw new Error('Partido no encontrado');
+        }
+
+        // Actualizar resultado
+        partido.golesEquipo1 = golesEquipo1;
+        partido.golesEquipo2 = golesEquipo2;
+        partido.estado = 'finalizado';
+
+        // Determinar ganador
+        let ganadorId: number | undefined;
+        let equipoGanador: Equipo | undefined;
+
+        if (golesEquipo1 > golesEquipo2) {
+          ganadorId = partido.equipo1?.id;
+          equipoGanador = partido.equipo1;
+        } else if (golesEquipo2 > golesEquipo1) {
+          ganadorId = partido.equipo2?.id;
+          equipoGanador = partido.equipo2;
+        }
+
+        partido.equipoGanador = ganadorId;
+
+        // Si hay ganador y hay partido siguiente, avanzar el equipo
+        if (equipoGanador && partido.partidoSiguiente) {
+          const siguientePartido = await em.findOne(
+            Partido,
+            { id: partido.partidoSiguiente.id }
+          );
+
+          if (siguientePartido) {
+            if (partido.posicionEnSiguiente === 1) {
+              siguientePartido.equipo1 = equipoGanador;
+            } else if (partido.posicionEnSiguiente === 2) {
+              siguientePartido.equipo2 = equipoGanador;
+            }
+            await em.persistAndFlush(siguientePartido);
+          }
+        }
+
+        await em.persistAndFlush(partido);
+        
+        // Recargar con relaciones
+        await em.populate(partido, ['equipo1', 'equipo2', 'partidoSiguiente']);
+        
+        return partido;
+      });
+
+      res.status(200).json({ 
+        success: true, 
+        data: result,
+        message: 'Resultado actualizado exitosamente' 
+      });
+    } catch (error: any) {
+      console.error('Error al actualizar resultado:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message || 'Error interno del servidor' 
+      });
+    }
+  }
 }

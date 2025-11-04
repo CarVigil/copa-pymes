@@ -717,7 +717,7 @@
         "equipo_id": {
           "name": "equipo_id",
           "type": "int",
-          "unsigned": false,
+          "unsigned": true,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
@@ -748,6 +748,16 @@
           "unique": false
         },
         {
+          "columnNames": [
+            "equipo_id"
+          ],
+          "composite": false,
+          "keyName": "usuario_equipo_id_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
           "keyName": "PRIMARY",
           "columnNames": [
             "id"
@@ -759,7 +769,22 @@
         }
       ],
       "checks": [],
-      "foreignKeys": {},
+      "foreignKeys": {
+        "usuario_equipo_id_foreign": {
+          "constraintName": "usuario_equipo_id_foreign",
+          "columnNames": [
+            "equipo_id"
+          ],
+          "localTableName": "usuario",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "equipo",
+          "createForeignKeyConstraint": true,
+          "deleteRule": "set null",
+          "updateRule": "cascade"
+        }
+      },
       "nativeEnums": {}
     },
     {
@@ -800,7 +825,7 @@
           "unsigned": true,
           "autoincrement": false,
           "primary": false,
-          "nullable": false,
+          "nullable": true,
           "length": null,
           "mappedType": "integer"
         },
@@ -810,7 +835,7 @@
           "unsigned": true,
           "autoincrement": false,
           "primary": false,
-          "nullable": false,
+          "nullable": true,
           "length": null,
           "mappedType": "integer"
         },
@@ -864,6 +889,56 @@
           "length": 255,
           "default": "'pendiente'",
           "mappedType": "string"
+        },
+        "fase": {
+          "name": "fase",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "length": 255,
+          "mappedType": "string"
+        },
+        "numero_partido": {
+          "name": "numero_partido",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "length": null,
+          "mappedType": "integer"
+        },
+        "equipo_ganador": {
+          "name": "equipo_ganador",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "length": null,
+          "mappedType": "integer"
+        },
+        "partido_siguiente_id": {
+          "name": "partido_siguiente_id",
+          "type": "int",
+          "unsigned": true,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "length": null,
+          "mappedType": "integer"
+        },
+        "posicion_en_siguiente": {
+          "name": "posicion_en_siguiente",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "length": null,
+          "mappedType": "integer"
         }
       },
       "name": "partido",
@@ -919,6 +994,16 @@
           "unique": false
         },
         {
+          "columnNames": [
+            "partido_siguiente_id"
+          ],
+          "composite": false,
+          "keyName": "partido_partido_siguiente_id_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
           "keyName": "PRIMARY",
           "columnNames": [
             "id"
@@ -955,6 +1040,7 @@
           ],
           "referencedTableName": "equipo",
           "createForeignKeyConstraint": true,
+          "deleteRule": "set null",
           "updateRule": "cascade"
         },
         "partido_equipo2_id_foreign": {
@@ -968,6 +1054,7 @@
           ],
           "referencedTableName": "equipo",
           "createForeignKeyConstraint": true,
+          "deleteRule": "set null",
           "updateRule": "cascade"
         },
         "partido_sede_id_foreign": {
@@ -994,6 +1081,20 @@
             "id"
           ],
           "referencedTableName": "usuario",
+          "createForeignKeyConstraint": true,
+          "deleteRule": "set null",
+          "updateRule": "cascade"
+        },
+        "partido_partido_siguiente_id_foreign": {
+          "constraintName": "partido_partido_siguiente_id_foreign",
+          "columnNames": [
+            "partido_siguiente_id"
+          ],
+          "localTableName": "partido",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "referencedTableName": "partido",
           "createForeignKeyConstraint": true,
           "deleteRule": "set null",
           "updateRule": "cascade"

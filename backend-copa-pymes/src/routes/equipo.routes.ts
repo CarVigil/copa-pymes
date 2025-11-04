@@ -7,6 +7,7 @@ const router = Router();
 // Rutas CRUD básicas
 router.get('/', authenticateToken, requireJugadorOrAdmin, EquipoController.getAll);
 router.get('/activos', authenticateToken, requireJugadorOrAdmin, EquipoController.getActivos);
+router.get('/jugadores-disponibles', authenticateToken, requireAdmin, EquipoController.getJugadoresDisponibles);
 router.get('/:id', authenticateToken, requireJugadorOrAdmin, EquipoController.getById);
 router.post('/', authenticateToken, requireJugadorOrAdmin, EquipoController.create);
 router.put('/:id', authenticateToken, requireJugadorOrAdmin, EquipoController.update);
