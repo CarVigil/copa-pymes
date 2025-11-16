@@ -5,10 +5,10 @@ import { ErrorMessage } from '../components/common/ErrorMessage';
 import './HomePage.css';
 
 interface HomePageProps {
-  onNavigateToJugadores?: () => void;
+  onNavigateTorneos?: () => void;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ onNavigateToJugadores }) => {
+export const HomePage: React.FC<HomePageProps> = ({ onNavigateTorneos  }) => {
   const { health, loading, error, refetch } = useHealth();
 
   if (loading) {
@@ -23,10 +23,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToJugadores }) => 
     <div className="home-page">
       <div className="hero-section">
         <h1>🏆 Copa Pymes</h1>
-        <p>Sistema de gestión para el torneo de empresas</p>
+        <p>Sistema de gestión para torneos de Fútbol Amateur</p>
       </div>
 
-      {health && (
+      {/*health && (
         <div className="status-card">
           <h3>📊 Estado del Sistema</h3>
           <div className="status-info">
@@ -46,17 +46,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToJugadores }) => 
             🔄 Actualizar estado
           </button>
         </div>
-      )}
+      )*/}
 
       <div className="features-grid">
         <div className="feature-card">
-          <h3>👥 Gestión de Jugadores</h3>
-          <p>Administra los jugadores del torneo</p>
+          <h3>Gestión de Torneos</h3>
+          <p>Administra los torneos</p>
           <button 
             className="feature-button" 
-            onClick={onNavigateToJugadores}
+            onClick={onNavigateTorneos}
           >
-            Ver Jugadores
+            Ver Torneos
           </button>
         </div>
         

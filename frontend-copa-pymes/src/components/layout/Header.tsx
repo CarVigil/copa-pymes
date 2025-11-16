@@ -41,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
             className={`nav-button ${currentPage === "home" ? "active" : ""}`}
             onClick={onNavigateHome}
           >
-            🏠 Inicio
+            Inicio
           </button>
           
           {/* Solo mostrar si tiene permiso para ver jugadores */}
@@ -52,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
               onClick={onNavigateJugadores}
             >
-              👥 Jugadores
+              Jugadores
             </button>
           )}
           
@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
               onClick={onNavigateTorneos}
             >
-              🏆 Torneos
+              Torneos
             </button>
           )}
           
@@ -76,21 +76,21 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
               onClick={onNavigateEquipos}
             >
-              ⚽ Equipos
+              Equipos
             </button>
           )}
           
           {/* Solo mostrar si tiene permiso para ver partidos */}
           {canView('partidos') && (
             <button className="nav-button">
-              🎮 Partidos
+              Partidos
             </button>
           )}
           
           {/* Solo mostrar si tiene permiso para ver resultados */}
           {canView('resultados') && (
             <button className="nav-button">
-              📊 Resultados
+              Resultados
             </button>
           )}
           
