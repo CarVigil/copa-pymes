@@ -8,6 +8,7 @@ import { JugadoresPage } from './pages/JugadoresPage';
 import { TorneosPage } from './pages/TorneosPage';
 import { EquiposPage } from './pages/EquiposPage';
 import { EquipoDetallePage } from './pages/EquipoDetallePage';
+import TorneoDetallePage from './pages/TorneoDetallePage';
 import LoginPage from './pages/LoginPage';
 import ProfilePage from './pages/ProfilePage';
 import { Loading } from './components/common/Loading';
@@ -39,6 +40,7 @@ function AppRoutes() {
   const path = location.pathname;
   let currentPage = 'home';
   if (path.startsWith('/jugadores')) currentPage = 'jugadores';
+  else if (path.startsWith('/torneos/')) currentPage = 'torneo-detalle';
   else if (path.startsWith('/torneos')) currentPage = 'torneos';
   else if (path === '/equipos') currentPage = 'equipos';
   else if (path.startsWith('/equipos/')) currentPage = 'equipo-detalle';
@@ -61,6 +63,7 @@ function AppRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/jugadores" element={<JugadoresPage />} />
           <Route path="/torneos" element={<TorneosPage />} />
+          <Route path="/torneos/:id" element={<TorneoDetallePage />} />
           <Route path="/equipos" element={<EquiposPage />} />
           <Route path="/equipos/:id" element={<EquipoDetallePage />} />
           <Route path="/perfil" element={<ProfilePage />} />

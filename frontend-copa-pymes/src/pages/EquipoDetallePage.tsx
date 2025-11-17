@@ -65,16 +65,28 @@ export const EquipoDetallePage: React.FC = () => {
 
   const handleAgregarJugador = async (jugadorId: number) => {
     try {
+      console.log('🔄 Agregando jugador:', jugadorId, 'al equipo:', id);
+      
       const res = await equipoService.agregarJugadorAlEquipo(
         Number(id),
         jugadorId
       );
-      if (res.success) {
-        await fetchEquipoYJugadores();
-        setIsModalOpen(false);
+      
+      console.log('📥 Respuesta del servidor:', res);
+      
+      if (!res.success) {
+        throw new Error(res.message || "Error al agregar jugador");
       }
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Error al agregar jugador");
+      
+      console.log('✅ Jugador agregado exitosamente, refrescando lista...');
+      
+      // Refrescar la lista de jugadores después de agregar exitosamente
+      await fetchEquipoYJugadores();
+      
+      console.log('✅ Lista actualizada');
+    } catch (error) {
+      console.error('❌ Error en handleAgregarJugador:', error);
+      throw error;
     }
   };
 

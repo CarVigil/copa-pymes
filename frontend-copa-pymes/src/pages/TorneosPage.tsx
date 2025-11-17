@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTorneos } from "../hooks/useTorneos";
 import { usePermissions } from "../hooks/usePermissions";
 import { ProtectedAction } from "../components/common/ProtectedAction";
@@ -10,6 +11,7 @@ import { CreateTorneoRequest, UpdateTorneoRequest } from "../types";
 import "./Page.css";
 
 export const TorneosPage: React.FC = () => {
+  const navigate = useNavigate();
   const {
     torneos,
     loading,
@@ -223,6 +225,14 @@ export const TorneosPage: React.FC = () => {
                     <td>{formatFecha(torneo.fecha_fin)}</td>
                     <td>{getEstadoBadge(torneo.estado)}</td>
                     <td>
+                      <button
+                        className="btn-icon btn-view"
+                        onClick={() => navigate(`/torneos/${torneo.id}`)}
+                        title="Ver Detalles y Llave"
+                        style={{ marginRight: '0.5rem' }}
+                      >
+                        👁️
+                      </button>
                       <ProtectedAction resource="torneos" action="edit">
                         <button
                           className="btn-icon btn-edit"
@@ -238,14 +248,9 @@ export const TorneosPage: React.FC = () => {
                           onClick={() => handleEliminarTorneo(torneo.id)}
                           title="Eliminar"
                         >
-                          🗑️
+                          �️
                         </button>
                       </ProtectedAction>
-                      {!canEdit('torneos') && !canDelete('torneos') && (
-                        <span className="text-muted" style={{fontSize: '0.85rem'}}>
-                          👁️ Solo lectura
-                        </span>
-                      )}
                     </td>
                   </tr>
                 ))}

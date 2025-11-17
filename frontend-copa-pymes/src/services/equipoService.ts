@@ -63,9 +63,9 @@ export const equipoService = {
 
   // ========== Gestión de Jugadores del Equipo ========== //
   getJugadoresDelEquipo: async (equipoId: number): Promise<ApiResponse<Jugador[]>> => {
-  const response = await apiClient.get<Jugador[]>(`/equipos/${equipoId}/jugadores`);
-  return { success: true, data: response.data };
-},
+    const response = await apiClient.get<ApiResponse<Jugador[]>>(`/equipos/${equipoId}/jugadores`);
+    return response.data;
+  },
   /**
    * Agrega un jugador existente al equipo
    */
@@ -93,15 +93,19 @@ export const equipoService = {
     return response.data;
   },
 
-  async getJugadoresDisponibles(equipoId?: number): Promise<ApiResponse<Jugador[]>> {
+  /**
+   * Obtiene jugadores que NO tienen equipo asignado (disponibles para agregar)
+   */
+  async getJugadoresDisponibles(): Promise<ApiResponse<Jugador[]>> {
     try {
-      const response = await apiClient.get(`/usuarios/rol/jugador`, {
-        params: { sinEquipo: true, equipoId },
-      });
-      return { success: true, data: response.data.data };
+      const response = await apiClient.get<ApiResponse<Jugador[]>>('/equipos/jugadores-disponibles');
+      return response.data;
     } catch (error: any) {
       console.error('Error al obtener jugadores disponibles:', error);
-      return { success: false, message: error.message };
+      return { 
+        success: false, 
+        message: error.response?.data?.message || error.message 
+      };
     }
   },
 };

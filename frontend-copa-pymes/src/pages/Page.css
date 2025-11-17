@@ -122,6 +122,10 @@
   transform: scale(1.1);
 }
 
+.btn-view:hover {
+  background: var(--color-primary);
+}
+
 .btn-edit:hover {
   background: var(--color-warning);
 }

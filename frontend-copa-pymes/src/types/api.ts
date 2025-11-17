@@ -139,6 +139,20 @@ export interface UpdateEquipoRequest {
   escudo?: string;
 }
 
+export interface Partido {
+  id: number;
+  fecha?: Date;
+  equipo1?: Equipo;
+  equipo2?: Equipo;
+  golesEquipo1?: number;
+  golesEquipo2?: number;
+  estado: 'pendiente' | 'en_juego' | 'finalizado' | 'suspendido';
+  fase?: string;
+  numeroPartido?: number;
+  equipoGanador?: number;
+  posicionEnSiguiente?: number;
+}
+
 // Tipos adicionales para otros roles de Usuario (por si los necesitas)
 export interface Usuario {
   id?: number;

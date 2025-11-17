@@ -29,21 +29,27 @@ export const ModalAgregarJugadorEquipo: React.FC<ModalAgregarJugadorEquipoProps>
   }, [isOpen]);
 
   const fetchJugadoresSinEquipo = async () => {
-  try {
-    setLoading(true);
-    const res = await equipoService.getJugadoresDisponibles(equipoId);
-    console.log(res);
-    if (res.success && res.data) {
-      setJugadoresSinEquipo(res.data);
-    } else {
-      alert(res.message || 'No se pudieron cargar los jugadores');
+    try {
+      setLoading(true);
+      console.log('🔍 Obteniendo jugadores disponibles (sin equipo)...');
+      
+      const res = await equipoService.getJugadoresDisponibles();
+      console.log('📥 Respuesta de jugadores disponibles:', res);
+      
+      if (res.success && res.data) {
+        console.log(`✅ ${res.data.length} jugadores disponibles encontrados`);
+        setJugadoresSinEquipo(res.data);
+      } else {
+        console.warn('⚠️ No se pudieron cargar jugadores:', res.message);
+        alert(res.message || 'No se pudieron cargar los jugadores disponibles');
+      }
+    } catch (error) {
+      console.error('❌ Error al cargar jugadores disponibles:', error);
+      alert('Error al cargar la lista de jugadores disponibles');
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Error al cargar jugadores:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,10 +62,18 @@ export const ModalAgregarJugadorEquipo: React.FC<ModalAgregarJugadorEquipoProps>
     try {
       setIsSubmitting(true);
       await onSubmit(jugadorSeleccionado);
+      
+      // Si llegamos aquí, fue exitoso
+      alert('✅ Jugador agregado al equipo exitosamente');
+      
+      // Limpiar estado y cerrar modal
       setJugadorSeleccionado(null);
       setSearchTerm('');
-    } catch (error) {
+      onClose();
+    } catch (error: any) {
       console.error('Error al agregar jugador:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Error al agregar el jugador al equipo';
+      alert(`❌ ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -152,11 +166,24 @@ export const ModalAgregarJugadorEquipo: React.FC<ModalAgregarJugadorEquipoProps>
                       ))}
                     </div>
                   ) : (
-                    <p style={{ textAlign: 'center', color: '#666', padding: '20px' }}>
-                      {searchTerm 
-                        ? 'No se encontraron jugadores con ese criterio de búsqueda'
-                        : 'No hay jugadores disponibles sin equipo'}
-                    </p>
+                    <div style={{ 
+                      textAlign: 'center', 
+                      padding: '40px 20px',
+                      backgroundColor: '#f8f9fa',
+                      borderRadius: '8px',
+                      border: '1px dashed #dee2e6'
+                    }}>
+                      <p style={{ color: '#666', marginBottom: '10px', fontSize: '1.1em' }}>
+                        {searchTerm 
+                          ? '🔍 No se encontraron jugadores con ese criterio de búsqueda'
+                          : '👥 No hay jugadores disponibles sin equipo'}
+                      </p>
+                      {!searchTerm && (
+                        <p style={{ color: '#999', fontSize: '0.9em' }}>
+                          Todos los jugadores activos ya están asignados a un equipo
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               </>

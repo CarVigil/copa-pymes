@@ -1,5 +1,5 @@
 import { apiClient } from './api';
-import { Torneo, ApiResponse, CreateTorneoRequest } from '../types';
+import { Torneo, ApiResponse, CreateTorneoRequest, Equipo } from '../types';
 
 export const torneosService = {
   getTorneos: async (): Promise<ApiResponse<Torneo[]>> => {
@@ -24,6 +24,24 @@ export const torneosService = {
 
   deleteTorneo: async (id: number): Promise<ApiResponse<null>> => {
     const response = await apiClient.delete<ApiResponse<null>>(`/torneos/${id}`);
+    return response.data;
+  },
+
+  // Obtener equipos inscritos en el torneo
+  getEquiposByTorneo: async (torneoId: number): Promise<ApiResponse<Equipo[]>> => {
+    const response = await apiClient.get<ApiResponse<Equipo[]>>(`/torneos/${torneoId}/equipos`);
+    return response.data;
+  },
+
+  // Obtener equipos disponibles para inscribir
+  getEquiposDisponibles: async (torneoId: number): Promise<ApiResponse<any[]>> => {
+    const response = await apiClient.get<ApiResponse<any[]>>(`/torneos/${torneoId}/equipos-disponibles`);
+    return response.data;
+  },
+
+  // Agregar equipo al torneo
+  agregarEquipoAlTorneo: async (torneoId: number, equipoId: number): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>(`/torneos/${torneoId}/equipos`, { equipoId });
     return response.data;
   },
 };
