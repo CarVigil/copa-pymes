@@ -108,7 +108,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </button>
 
             {/* Botones de acceso rápido para pruebas */}
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'none', gap: '0.5rem'}}>
               <button
                 type="button"
                 className="btn btn-secondary"
@@ -138,7 +138,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         </div>
 
         <div className="login-footer">
-          <p>
+          <p style={{ display: 'none' }}>
             <strong>Usuarios de prueba:</strong><br />
             Admin: admin@copapymes.com / admin123<br />
             Jugador: jugador@test.com / 123456

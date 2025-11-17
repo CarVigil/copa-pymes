@@ -60,7 +60,12 @@ function AppRoutes() {
 
       <main className="main-content">
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route
+            path="/"
+            element={
+              <HomePage onNavigateTorneos={() => navigate("/torneos")} />
+            }
+          />
           <Route path="/jugadores" element={<JugadoresPage />} />
           <Route path="/torneos" element={<TorneosPage />} />
           <Route path="/torneos/:id" element={<TorneoDetallePage />} />
