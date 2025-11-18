@@ -44,4 +44,16 @@ export const torneosService = {
     const response = await apiClient.post<ApiResponse<any>>(`/torneos/${torneoId}/equipos`, { equipoId });
     return response.data;
   },
+
+  // Generar llave de partidos manualmente
+  generarLlave: async (torneoId: number): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>(`/torneos/${torneoId}/generar-llave`);
+    return response.data;
+  },
+
+  // Regenerar llave de partidos (limpia y crea nuevos)
+  regenerarLlave: async (torneoId: number): Promise<ApiResponse<any>> => {
+    const response = await apiClient.post<ApiResponse<any>>(`/torneos/${torneoId}/regenerar-llave`);
+    return response.data;
+  },
 };

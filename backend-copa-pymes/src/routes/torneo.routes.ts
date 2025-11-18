@@ -14,6 +14,8 @@ router.get('/:id/equipos-disponibles', authenticateToken, requireAdmin, Inscripc
 router.get('/:id/partidos', authenticateToken, requireJugadorOrAdmin, PartidoController.getPartidosByTorneo);
 
 // Rutas de gestión (solo admins)
+router.post('/:id/generar-llave', authenticateToken, requireAdmin, InscripcionController.generarLlaveManual);
+router.post('/:id/regenerar-llave', authenticateToken, requireAdmin, InscripcionController.regenerarLlave);
 router.post('/', authenticateToken, requireAdmin, TorneoController.create);
 router.put('/:id', authenticateToken, requireAdmin, TorneoController.update);
 router.delete('/:id', authenticateToken, requireAdmin, TorneoController.delete);

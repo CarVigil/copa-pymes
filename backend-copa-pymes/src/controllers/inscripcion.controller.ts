@@ -41,94 +41,112 @@ const retryDatabaseOperation = async <T>(
   throw new Error("No se pudo completar la operación después de múltiples intentos");
 };
 
-// Función para generar la llave de partidos (octavos de final)
+// Función para generar la llave de partidos adaptada a la cantidad de equipos
 const generarLlavePartidos = async (em: SqlEntityManager, torneo: Torneo, equipos: Equipo[]) => {
-  console.log(`🏆 Generando llave de partidos para torneo ${torneo.nombre}...`);
+  console.log(`🏆 Generando llave de partidos para torneo ${torneo.nombre} con ${equipos.length} equipos...`);
   
-  // Crear partidos de octavos de final (4 partidos)
-  const partidosOctavos: Partido[] = [];
+  const cantidadEquipos = equipos.length;
+  const todosLosPartidos: Partido[] = [];
   
-  for (let i = 0; i < 4; i++) {
-    const partido = em.create(Partido, {
-      torneo,
-      equipo1: equipos[i * 2],
-      equipo2: equipos[i * 2 + 1],
-      fase: 'octavos',
-      numeroPartido: i + 1,
-      estado: 'pendiente',
-    });
-    partidosOctavos.push(partido);
+  // Validar que sea potencia de 2
+  if (![4, 8, 16].includes(cantidadEquipos)) {
+    throw new Error(`El torneo debe tener 4, 8 o 16 equipos. Actualmente tiene ${cantidadEquipos}`);
   }
 
-  // Crear partidos de cuartos de final (2 partidos)
-  const partidosCuartos: Partido[] = [];
-  
-  for (let i = 0; i < 2; i++) {
-    const partido = em.create(Partido, {
-      torneo,
-      fase: 'cuartos',
-      numeroPartido: i + 1,
-      estado: 'pendiente',
-    });
-    partidosCuartos.push(partido);
-  }
-
-  // Crear semifinal (1 partido)
-  const partidoSemifinal = em.create(Partido, {
-    torneo,
-    fase: 'semifinal',
-    numeroPartido: 1,
-    estado: 'pendiente',
-  });
-
-  // Crear final (1 partido)
+  // CREAR LA FINAL (siempre existe)
   const partidoFinal = em.create(Partido, {
     torneo,
     fase: 'final',
     numeroPartido: 1,
     estado: 'pendiente',
   });
+  todosLosPartidos.push(partidoFinal);
 
-  // Establecer relaciones de avance
-  // Octavos -> Cuartos
-  partidosOctavos[0].partidoSiguiente = partidosCuartos[0];
-  partidosOctavos[0].posicionEnSiguiente = 1;
-  
-  partidosOctavos[1].partidoSiguiente = partidosCuartos[0];
-  partidosOctavos[1].posicionEnSiguiente = 2;
-  
-  partidosOctavos[2].partidoSiguiente = partidosCuartos[1];
-  partidosOctavos[2].posicionEnSiguiente = 1;
-  
-  partidosOctavos[3].partidoSiguiente = partidosCuartos[1];
-  partidosOctavos[3].posicionEnSiguiente = 2;
+  // CREAR LA SEMIFINAL (siempre existe para 4, 8, 16 equipos)
+  const partidosSemifinal: Partido[] = [];
+  for (let i = 0; i < 2; i++) {
+    const partido = em.create(Partido, {
+      torneo,
+      fase: 'semifinal',
+      numeroPartido: i + 1,
+      estado: 'pendiente',
+      partidoSiguiente: partidoFinal,
+      posicionEnSiguiente: i + 1,
+    });
+    partidosSemifinal.push(partido);
+    todosLosPartidos.push(partido);
+  }
 
-  // Cuartos -> Semifinal
-  partidosCuartos[0].partidoSiguiente = partidoSemifinal;
-  partidosCuartos[0].posicionEnSiguiente = 1;
-  
-  partidosCuartos[1].partidoSiguiente = partidoSemifinal;
-  partidosCuartos[1].posicionEnSiguiente = 2;
+  // Si hay 4 equipos, asignarlos directamente a las semifinales
+  if (cantidadEquipos === 4) {
+    partidosSemifinal[0].equipo1 = equipos[0];
+    partidosSemifinal[0].equipo2 = equipos[1];
+    partidosSemifinal[1].equipo1 = equipos[2];
+    partidosSemifinal[1].equipo2 = equipos[3];
+    
+    console.log(`✅ Llave generada: 3 partidos (2 semifinales + 1 final) para 4 equipos`);
+  }
+  // Si hay 8 equipos, crear cuartos de final
+  else if (cantidadEquipos === 8) {
+    const partidosCuartos: Partido[] = [];
+    for (let i = 0; i < 4; i++) {
+      const partido = em.create(Partido, {
+        torneo,
+        equipo1: equipos[i * 2],
+        equipo2: equipos[i * 2 + 1],
+        fase: 'cuartos',
+        numeroPartido: i + 1,
+        estado: 'pendiente',
+        partidoSiguiente: partidosSemifinal[Math.floor(i / 2)],
+        posicionEnSiguiente: (i % 2) + 1,
+      });
+      partidosCuartos.push(partido);
+      todosLosPartidos.push(partido);
+    }
+    
+    console.log(`✅ Llave generada: 7 partidos (4 cuartos + 2 semifinales + 1 final) para 8 equipos`);
+  }
+  // Si hay 16 equipos, crear octavos de final
+  else if (cantidadEquipos === 16) {
+    // Crear cuartos de final primero (sin equipos asignados)
+    const partidosCuartos: Partido[] = [];
+    for (let i = 0; i < 4; i++) {
+      const partido = em.create(Partido, {
+        torneo,
+        fase: 'cuartos',
+        numeroPartido: i + 1,
+        estado: 'pendiente',
+        partidoSiguiente: partidosSemifinal[Math.floor(i / 2)],
+        posicionEnSiguiente: (i % 2) + 1,
+      });
+      partidosCuartos.push(partido);
+      todosLosPartidos.push(partido);
+    }
 
-  // Semifinal -> Final
-  partidoSemifinal.partidoSiguiente = partidoFinal;
+    // Crear octavos de final con los equipos
+    const partidosOctavos: Partido[] = [];
+    for (let i = 0; i < 8; i++) {
+      const partido = em.create(Partido, {
+        torneo,
+        equipo1: equipos[i * 2],
+        equipo2: equipos[i * 2 + 1],
+        fase: 'octavos',
+        numeroPartido: i + 1,
+        estado: 'pendiente',
+        partidoSiguiente: partidosCuartos[Math.floor(i / 2)],
+        posicionEnSiguiente: (i % 2) + 1,
+      });
+      partidosOctavos.push(partido);
+      todosLosPartidos.push(partido);
+    }
+    
+    console.log(`✅ Llave generada: 15 partidos (8 octavos + 4 cuartos + 2 semifinales + 1 final) para 16 equipos`);
+  }
 
   // Persistir todos los partidos
-  await em.persistAndFlush([
-    ...partidosOctavos,
-    ...partidosCuartos,
-    partidoSemifinal,
-    partidoFinal,
-  ]);
-
-  console.log(`✅ Llave generada: 8 partidos creados (4 octavos + 2 cuartos + 1 semifinal + 1 final)`);
+  await em.persistAndFlush(todosLosPartidos);
   
-  return {
-    octavos: partidosOctavos,
-    cuartos: partidosCuartos,
-    semifinal: partidoSemifinal,
-    final: partidoFinal,
-  };
+  return todosLosPartidos;
 };
 
 export class InscripcionController {
@@ -179,10 +197,12 @@ export class InscripcionController {
           throw new Error("El equipo ya está inscrito en este torneo");
         }
 
-        // Verificar que no haya más de 8 equipos
+        // Verificar que no haya más de la cantidad configurada
         const equiposInscritos = await em.count(Inscripcion, { torneo: parseInt(torneoId) });
-        if (equiposInscritos >= 8) {
-          throw new Error("El torneo ya tiene el máximo de 8 equipos inscritos");
+        const cantidadMaxima = torneo.cantidad_equipos || 16;
+        
+        if (equiposInscritos >= cantidadMaxima) {
+          throw new Error(`El torneo ya tiene el máximo de ${cantidadMaxima} equipos inscritos`);
         }
 
         // Crear inscripción
@@ -194,31 +214,40 @@ export class InscripcionController {
 
         await em.persistAndFlush(inscripcion);
         
-        // Si es el 8vo equipo, generar la llave de partidos
+        // GENERAR LA LLAVE SOLO cuando se alcance la cantidad configurada en el torneo
         const totalEquipos = equiposInscritos + 1;
-        if (totalEquipos === 8) {
-          console.log('🎯 Torneo completo con 8 equipos! Generando llave de partidos...');
+        let llaveGenerada = false;
+        
+        // Verificar que el torneo sea eliminatorio y que se haya alcanzado la cantidad configurada
+        if (torneo.tipo === 'eliminatorio' && totalEquipos === cantidadMaxima) {
+          console.log(`🎯 Torneo completo con ${totalEquipos} equipos (cantidad configurada)! Generando llave de partidos...`);
           
-          // Obtener todos los equipos inscritos
-          const inscripciones = await em.find(Inscripcion, 
-            { torneo: parseInt(torneoId) },
-            { populate: ['equipo'] }
-          );
-          
-          const equipos = inscripciones.map(insc => insc.equipo);
-          
-          // Generar llave
-          await generarLlavePartidos(em, torneo, equipos);
+          // Verificar que la cantidad sea válida para eliminatorias (4, 8 o 16)
+          if ([4, 8, 16].includes(totalEquipos)) {
+            // Obtener todos los equipos inscritos
+            const inscripciones = await em.find(Inscripcion, 
+              { torneo: parseInt(torneoId) },
+              { populate: ['equipo'] }
+            );
+            
+            const equipos = inscripciones.map(insc => insc.equipo);
+            
+            // Generar llave
+            await generarLlavePartidos(em, torneo, equipos);
+            llaveGenerada = true;
+          } else {
+            console.warn(`⚠️ El torneo tiene ${totalEquipos} equipos pero solo se soportan 4, 8 o 16 para eliminatorias`);
+          }
         }
         
         // Retornar con equipo populado
         await em.populate(inscripcion, ["equipo", "torneo"]);
         
-        return { inscripcion, llaveGenerada: totalEquipos === 8 };
+        return { inscripcion, llaveGenerada, totalEquipos };
       });
 
       const mensaje = result.llaveGenerada 
-        ? "Equipo agregado exitosamente. ¡Torneo completo! La llave de partidos ha sido generada."
+        ? `Equipo agregado exitosamente. ¡Torneo completo con ${result.totalEquipos} equipos! La llave de partidos ha sido generada.`
         : "Equipo agregado al torneo exitosamente";
 
       res.status(201).json({
@@ -400,6 +429,112 @@ export class InscripcionController {
       res.status(500).json({
         success: false,
         message: "Error interno del servidor",
+      });
+    }
+  }
+
+  // POST /api/torneos/:id/generar-llave - Generar llave de partidos manualmente
+  static async generarLlaveManual(req: Request, res: Response) {
+    try {
+      const torneoId = req.params.id;
+
+      const result = await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork() as SqlEntityManager;
+
+        // Verificar que el torneo existe
+        const torneo = await em.findOne(Torneo, { id: parseInt(torneoId) });
+        if (!torneo) {
+          throw new Error("Torneo no encontrado");
+        }
+
+        // Verificar que haya exactamente 4, 8 o 16 equipos
+        const inscripciones = await em.find(Inscripcion, 
+          { torneo: parseInt(torneoId) },
+          { populate: ['equipo'] }
+        );
+
+        if (![4, 8, 16].includes(inscripciones.length)) {
+          throw new Error(`El torneo debe tener 4, 8 o 16 equipos. Actualmente tiene ${inscripciones.length}`);
+        }
+
+        // Verificar si ya hay partidos generados - LIMPIARLOS AUTOMÁTICAMENTE
+        const partidosExistentes = await em.find(Partido, { torneo: parseInt(torneoId) });
+        if (partidosExistentes.length > 0) {
+          console.log(`🗑️ Limpiando ${partidosExistentes.length} partidos existentes antes de regenerar...`);
+          await em.removeAndFlush(partidosExistentes);
+        }
+
+        // Generar la llave
+        const equipos = inscripciones.map(insc => insc.equipo);
+        const llave = await generarLlavePartidos(em, torneo, equipos);
+
+        return llave;
+      });
+
+      res.status(201).json({
+        success: true,
+        data: result,
+        message: "Llave de partidos generada exitosamente",
+      });
+    } catch (error: any) {
+      console.error("Error al generar llave:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Error interno del servidor",
+      });
+    }
+  }
+
+  // POST /api/torneos/:id/regenerar-llave - Limpiar y regenerar llave de partidos
+  static async regenerarLlave(req: Request, res: Response) {
+    try {
+      const torneoId = req.params.id;
+
+      const result = await retryDatabaseOperation(async () => {
+        const orm = getORM();
+        const em = orm.em.fork() as SqlEntityManager;
+
+        // Verificar que el torneo existe
+        const torneo = await em.findOne(Torneo, { id: parseInt(torneoId) });
+        if (!torneo) {
+          throw new Error("Torneo no encontrado");
+        }
+
+        // Verificar que haya exactamente 4, 8 o 16 equipos
+        const inscripciones = await em.find(Inscripcion, 
+          { torneo: parseInt(torneoId) },
+          { populate: ['equipo'] }
+        );
+
+        if (![4, 8, 16].includes(inscripciones.length)) {
+          throw new Error(`El torneo debe tener 4, 8 o 16 equipos. Actualmente tiene ${inscripciones.length}`);
+        }
+
+        // LIMPIAR todos los partidos existentes del torneo
+        const partidosExistentes = await em.find(Partido, { torneo: parseInt(torneoId) });
+        if (partidosExistentes.length > 0) {
+          console.log(`🗑️ Eliminando ${partidosExistentes.length} partidos existentes...`);
+          await em.removeAndFlush(partidosExistentes);
+        }
+
+        // Generar la nueva llave
+        const equipos = inscripciones.map(insc => insc.equipo);
+        const llave = await generarLlavePartidos(em, torneo, equipos);
+
+        return { partidosGenerados: llave.length, equipos: equipos.length };
+      });
+
+      res.status(201).json({
+        success: true,
+        data: result,
+        message: "Llave de partidos regenerada exitosamente",
+      });
+    } catch (error: any) {
+      console.error("Error al regenerar llave:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Error interno del servidor",
       });
     }
   }

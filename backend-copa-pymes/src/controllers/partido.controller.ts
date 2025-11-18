@@ -167,14 +167,33 @@ export class PartidoController {
         const orm = getORM();
         const em = orm.em.fork();
         
+        // Obtener partidos del torneo específico
         const partidos = await em.find(
           Partido,
           { torneo: parseInt(id) },
           { 
             populate: ['equipo1', 'equipo2', 'partidoSiguiente'],
-            orderBy: { fase: 'ASC', numeroPartido: 'ASC' }
           }
         );
+        
+        // Ordenar manualmente por fase y número de partido
+        const ordenFases: { [key: string]: number } = {
+          'octavos': 1,
+          'cuartos': 2,
+          'semifinal': 3,
+          'final': 4
+        };
+        
+        partidos.sort((a, b) => {
+          const ordenA = ordenFases[a.fase || ''] || 999;
+          const ordenB = ordenFases[b.fase || ''] || 999;
+          
+          if (ordenA !== ordenB) {
+            return ordenA - ordenB;
+          }
+          
+          return (a.numeroPartido || 0) - (b.numeroPartido || 0);
+        });
         
         return partidos;
       });

@@ -100,10 +100,14 @@ const TorneoDetallePage: React.FC = () => {
     }
   };
 
+  // Usar la cantidad de equipos configurada en el torneo (no calcular hitos)
+  const cantidadConfigurada = torneo?.cantidad_equipos || 16;
+  const torneoCompleto = equipos.length === cantidadConfigurada;
+
   // Organizar partidos por fase
   const partidosOctavos = partidos.filter(p => p.fase === 'octavos').sort((a, b) => (a.numeroPartido || 0) - (b.numeroPartido || 0));
   const partidosCuartos = partidos.filter(p => p.fase === 'cuartos').sort((a, b) => (a.numeroPartido || 0) - (b.numeroPartido || 0));
-  const partidoSemifinal = partidos.find(p => p.fase === 'semifinal');
+  const partidosSemifinal = partidos.filter(p => p.fase === 'semifinal').sort((a, b) => (a.numeroPartido || 0) - (b.numeroPartido || 0));
   const partidoFinal = partidos.find(p => p.fase === 'final');
 
   if (loading) {
@@ -121,6 +125,45 @@ const TorneoDetallePage: React.FC = () => {
       </div>
     );
   }
+
+  const handleGenerarLlave = async (event?: React.MouseEvent<HTMLButtonElement>): Promise<void> => {
+    if (!torneo || !id) return;
+
+    // Confirmar con el usuario antes de generar la llave
+    const confirmar = window.confirm(
+      `¿Generar la llave de partidos para el torneo "${torneo.nombre}" con ${equipos.length} equipos? Esta acción creará los enfrentamientos y no podrá revertirse fácilmente.`
+    );
+    if (!confirmar) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Llamada directa al backend para generar la llave (evita usar un método no existente en torneosService)
+      const res = await fetch(`/api/torneos/${id}/generar-llave`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const response = await res.json();
+
+      if (!response || !response.success) {
+        const msg = response?.message || 'Error al generar la llave del torneo';
+        setError(msg);
+        return;
+      }
+
+      // Recargar datos para obtener los partidos generados
+      await fetchTorneoYEquipos();
+    } catch (err: any) {
+      console.error('Error al generar la llave:', err);
+      setError(err?.response?.data?.message || 'Error al generar la llave del torneo');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="torneo-detalle-page">
@@ -166,9 +209,9 @@ const TorneoDetallePage: React.FC = () => {
         </div>
         <div className="info-row">
           <span className="info-label">Equipos inscritos:</span>
-          <span className={`info-value ${equipos.length >= 8 ? 'complete' : 'incomplete'}`}>
-            {equipos.length} / 8
-            {equipos.length >= 8 ? ' ✓ Completo' : ' (faltan ' + (8 - equipos.length) + ')'}
+          <span className={`info-value ${torneoCompleto ? 'complete' : 'incomplete'}`}>
+            {equipos.length} / {cantidadConfigurada}
+            {torneoCompleto ? ' ✓ Completo' : ` (faltan ${cantidadConfigurada - equipos.length} para generar llave)`}
           </span>
         </div>
       </div>
@@ -177,18 +220,32 @@ const TorneoDetallePage: React.FC = () => {
         <button
           onClick={() => setShowModal(true)}
           className="btn btn-primary"
-          disabled={equipos.length >= 8}
+          disabled={equipos.length >= cantidadConfigurada}
         >
-          {equipos.length >= 8 ? 'Torneo Completo' : '+ Agregar Equipo'}
+          {equipos.length >= cantidadConfigurada ? 'Máximo de equipos alcanzado' : '+ Agregar Equipo'}
         </button>
+        {canEdit('torneos') && torneoCompleto && partidos.length === 0 && (
+          <button
+            onClick={handleGenerarLlave}
+            className="btn btn-success"
+          >
+            🏆 Generar Llave de Partidos
+          </button>
+        )}
       </div>
 
-      {equipos.length < 8 ? (
+      {!torneoCompleto ? (
         <div className="warning-message">
-          ⚠️ Se necesitan {8 - equipos.length} equipo(s) más para completar la llave del torneo
+          ⚠️ Se necesitan {cantidadConfigurada - equipos.length} equipo(s) más para alcanzar {cantidadConfigurada} equipos y generar la llave
         </div>
       ) : (
-        <div className="success-message">✅ Llave de torneo completa - 8 equipos inscritos</div>
+        <div className="success-message">✅ Llave de torneo lista - {equipos.length} equipos inscritos</div>
+      )}
+
+      {torneoCompleto && partidos.length === 0 && (
+        <div className="info-message">
+          ℹ️ Haz clic en "🏆 Generar Llave de Partidos" para crear los enfrentamientos.
+        </div>
       )}
 
       {partidos.length > 0 ? (
@@ -196,123 +253,130 @@ const TorneoDetallePage: React.FC = () => {
           <h2 className="bracket-title">Llave del Torneo</h2>
 
           <div className="bracket-grid">
-            {/* Octavos de Final */}
-            <div className="bracket-round">
-              <h3 className="round-title">Octavos de Final</h3>
-              <div className="matches">
-                {partidosOctavos.map((partido) => (
-                  <div 
-                    key={partido.id} 
-                    className={`match-card ${partido.estado === 'finalizado' ? 'finished' : partido.equipo1 && partido.equipo2 ? 'clickable' : 'future-match'}`}
-                    onClick={() => handleClickPartido(partido)}
-                    style={{ cursor: canEdit('torneos') && partido.equipo1 && partido.equipo2 ? 'pointer' : 'default' }}
-                  >
-                    <div className="match-header">
-                      Partido {partido.numeroPartido}
-                      {partido.estado === 'finalizado' && ' ✅'}
-                    </div>
-                    <div className="match-teams">
-                      <div className={`team ${partido.equipo1 ? (partido.equipoGanador === partido.equipo1.id ? 'winner' : 'filled') : 'empty'}`}>
-                        <span className="team-number">1</span>
-                        <span className="team-name">
-                          {partido.equipo1?.nombre || 'Por definir'}
-                        </span>
-                        {partido.estado === 'finalizado' && (
-                          <span className="team-score">{partido.golesEquipo1}</span>
-                        )}
+            {/* Octavos de Final - Solo si existen */}
+            {partidosOctavos.length > 0 && (
+              <div className="bracket-round">
+                <h3 className="round-title">Octavos de Final</h3>
+                <div className="matches">
+                  {partidosOctavos.map((partido) => (
+                    <div 
+                      key={partido.id} 
+                      className={`match-card ${partido.estado === 'finalizado' ? 'finished' : partido.equipo1 && partido.equipo2 ? 'clickable' : 'future-match'}`}
+                      onClick={() => handleClickPartido(partido)}
+                      style={{ cursor: canEdit('torneos') && partido.equipo1 && partido.equipo2 ? 'pointer' : 'default' }}
+                    >
+                      <div className="match-header">
+                        Partido {partido.numeroPartido}
+                        {partido.estado === 'finalizado' && ' ✅'}
                       </div>
-                      <div className="vs-divider">VS</div>
-                      <div className={`team ${partido.equipo2 ? (partido.equipoGanador === partido.equipo2.id ? 'winner' : 'filled') : 'empty'}`}>
-                        <span className="team-number">2</span>
-                        <span className="team-name">
-                          {partido.equipo2?.nombre || 'Por definir'}
-                        </span>
-                        {partido.estado === 'finalizado' && (
-                          <span className="team-score">{partido.golesEquipo2}</span>
-                        )}
+                      <div className="match-teams">
+                        <div className={`team ${partido.equipo1 ? (partido.equipoGanador === partido.equipo1.id ? 'winner' : 'filled') : 'empty'}`}>
+                          <span className="team-number">1</span>
+                          <span className="team-name">
+                            {partido.equipo1?.nombre || 'Por definir'}
+                          </span>
+                          {partido.estado === 'finalizado' && (
+                            <span className="team-score">{partido.golesEquipo1}</span>
+                          )}
+                        </div>
+                        <div className="vs-divider">VS</div>
+                        <div className={`team ${partido.equipo2 ? (partido.equipoGanador === partido.equipo2.id ? 'winner' : 'filled') : 'empty'}`}>
+                          <span className="team-number">2</span>
+                          <span className="team-name">
+                            {partido.equipo2?.nombre || 'Por definir'}
+                          </span>
+                          {partido.estado === 'finalizado' && (
+                            <span className="team-score">{partido.golesEquipo2}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Cuartos de Final */}
-            <div className="bracket-round">
-              <h3 className="round-title">Cuartos de Final</h3>
-              <div className="matches">
-                {partidosCuartos.map((partido) => (
-                  <div 
-                    key={partido.id} 
-                    className={`match-card ${partido.estado === 'finalizado' ? 'finished' : partido.equipo1 && partido.equipo2 ? 'clickable' : 'future-match'}`}
-                    onClick={() => handleClickPartido(partido)}
-                    style={{ cursor: canEdit('torneos') && partido.equipo1 && partido.equipo2 ? 'pointer' : 'default' }}
-                  >
-                    <div className="match-header">
-                      Partido {partido.numeroPartido}
-                      {partido.estado === 'finalizado' && ' ✅'}
-                    </div>
-                    <div className="match-teams">
-                      <div className={`team ${partido.equipo1 ? (partido.equipoGanador === partido.equipo1.id ? 'winner' : 'filled') : 'empty'}`}>
-                        <span className="team-name">
-                          {partido.equipo1?.nombre || 'Por definir'}
-                        </span>
-                        {partido.estado === 'finalizado' && (
-                          <span className="team-score">{partido.golesEquipo1}</span>
-                        )}
+            {/* Cuartos de Final - Solo si existen */}
+            {partidosCuartos.length > 0 && (
+              <div className="bracket-round">
+                <h3 className="round-title">Cuartos de Final</h3>
+                <div className="matches">
+                  {partidosCuartos.map((partido) => (
+                    <div 
+                      key={partido.id} 
+                      className={`match-card ${partido.estado === 'finalizado' ? 'finished' : partido.equipo1 && partido.equipo2 ? 'clickable' : 'future-match'}`}
+                      onClick={() => handleClickPartido(partido)}
+                      style={{ cursor: canEdit('torneos') && partido.equipo1 && partido.equipo2 ? 'pointer' : 'default' }}
+                    >
+                      <div className="match-header">
+                        Partido {partido.numeroPartido}
+                        {partido.estado === 'finalizado' && ' ✅'}
                       </div>
-                      <div className="vs-divider">VS</div>
-                      <div className={`team ${partido.equipo2 ? (partido.equipoGanador === partido.equipo2.id ? 'winner' : 'filled') : 'empty'}`}>
-                        <span className="team-name">
-                          {partido.equipo2?.nombre || 'Por definir'}
-                        </span>
-                        {partido.estado === 'finalizado' && (
-                          <span className="team-score">{partido.golesEquipo2}</span>
-                        )}
+                      <div className="match-teams">
+                        <div className={`team ${partido.equipo1 ? (partido.equipoGanador === partido.equipo1.id ? 'winner' : 'filled') : 'empty'}`}>
+                          <span className="team-name">
+                            {partido.equipo1?.nombre || 'Por definir'}
+                          </span>
+                          {partido.estado === 'finalizado' && (
+                            <span className="team-score">{partido.golesEquipo1}</span>
+                          )}
+                        </div>
+                        <div className="vs-divider">VS</div>
+                        <div className={`team ${partido.equipo2 ? (partido.equipoGanador === partido.equipo2.id ? 'winner' : 'filled') : 'empty'}`}>
+                          <span className="team-name">
+                            {partido.equipo2?.nombre || 'Por definir'}
+                          </span>
+                          {partido.estado === 'finalizado' && (
+                            <span className="team-score">{partido.golesEquipo2}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Semifinal */}
-            <div className="bracket-round">
-              <h3 className="round-title">Semifinal</h3>
-              <div className="matches">
-                {partidoSemifinal && (
-                  <div 
-                    className={`match-card ${partidoSemifinal.estado === 'finalizado' ? 'finished' : partidoSemifinal.equipo1 && partidoSemifinal.equipo2 ? 'clickable' : 'future-match'}`}
-                    onClick={() => handleClickPartido(partidoSemifinal)}
-                    style={{ cursor: canEdit('torneos') && partidoSemifinal.equipo1 && partidoSemifinal.equipo2 ? 'pointer' : 'default' }}
-                  >
-                    <div className="match-header">
-                      Semifinal
-                      {partidoSemifinal.estado === 'finalizado' && ' ✅'}
-                    </div>
-                    <div className="match-teams">
-                      <div className={`team ${partidoSemifinal.equipo1 ? (partidoSemifinal.equipoGanador === partidoSemifinal.equipo1.id ? 'winner' : 'filled') : 'empty'}`}>
-                        <span className="team-name">
-                          {partidoSemifinal.equipo1?.nombre || 'Por definir'}
-                        </span>
-                        {partidoSemifinal.estado === 'finalizado' && (
-                          <span className="team-score">{partidoSemifinal.golesEquipo1}</span>
-                        )}
+            {/* Semifinal - Mostrar todos los partidos de semifinal */}
+            {partidosSemifinal.length > 0 && (
+              <div className="bracket-round">
+                <h3 className="round-title">Semifinal</h3>
+                <div className="matches">
+                  {partidosSemifinal.map((partido) => (
+                    <div 
+                      key={partido.id}
+                      className={`match-card ${partido.estado === 'finalizado' ? 'finished' : partido.equipo1 && partido.equipo2 ? 'clickable' : 'future-match'}`}
+                      onClick={() => handleClickPartido(partido)}
+                      style={{ cursor: canEdit('torneos') && partido.equipo1 && partido.equipo2 ? 'pointer' : 'default' }}
+                    >
+                      <div className="match-header">
+                        Partido {partido.numeroPartido}
+                        {partido.estado === 'finalizado' && ' ✅'}
                       </div>
-                      <div className="vs-divider">VS</div>
-                      <div className={`team ${partidoSemifinal.equipo2 ? (partidoSemifinal.equipoGanador === partidoSemifinal.equipo2.id ? 'winner' : 'filled') : 'empty'}`}>
-                        <span className="team-name">
-                          {partidoSemifinal.equipo2?.nombre || 'Por definir'}
-                        </span>
-                        {partidoSemifinal.estado === 'finalizado' && (
-                          <span className="team-score">{partidoSemifinal.golesEquipo2}</span>
-                        )}
+                      <div className="match-teams">
+                        <div className={`team ${partido.equipo1 ? (partido.equipoGanador === partido.equipo1.id ? 'winner' : 'filled') : 'empty'}`}>
+                          <span className="team-name">
+                            {partido.equipo1?.nombre || 'Por definir'}
+                          </span>
+                          {partido.estado === 'finalizado' && (
+                            <span className="team-score">{partido.golesEquipo1}</span>
+                          )}
+                        </div>
+                        <div className="vs-divider">VS</div>
+                        <div className={`team ${partido.equipo2 ? (partido.equipoGanador === partido.equipo2.id ? 'winner' : 'filled') : 'empty'}`}>
+                          <span className="team-name">
+                            {partido.equipo2?.nombre || 'Por definir'}
+                          </span>
+                          {partido.estado === 'finalizado' && (
+                            <span className="team-score">{partido.golesEquipo2}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Final */}
             <div className="bracket-round final-round">
