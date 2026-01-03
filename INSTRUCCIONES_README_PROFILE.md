@@ -43,9 +43,9 @@ He analizado las tecnologías que usás en tu proyecto **Copa Pymes** y creé un
    - Guardá los cambios (commit)
 
 3. **Personalizar los enlaces:**
-   - Reemplazá `https://linkedin.com/in/tu-perfil` con tu perfil real de LinkedIn
+   - Reemplazá `https://www.linkedin.com/in/tu-perfil` con tu perfil real de LinkedIn
    - Reemplazá `tu-email@ejemplo.com` con tu email real
-   - Podés agregar más redes sociales si querés
+   - Podés agregar más redes sociales si querés (Twitter, Instagram, portfolio personal, etc.)
 
 ### Opción 2: Usar como inspiración
 
