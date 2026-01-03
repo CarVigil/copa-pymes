@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePermissions } from "../../hooks/usePermissions";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faUser, faChevronDown, faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
 import "./Header.css";
 
 interface HeaderProps {
@@ -26,11 +28,31 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { user, logout } = useAuth();
   const { canView } = usePermissions();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
     logout();
     // La aplicación se redirigirá automáticamente al login
   };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  // Cerrar el dropdown cuando se hace clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <header className="header">
@@ -94,23 +116,46 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
           
-          {/* Información del usuario y logout */}
-          <div className="user-section">
+          {/* Información del usuario y dropdown */}
+          <div className="user-section" ref={dropdownRef}>
             <button
-              className={`nav-button profile-button ${
-                currentPage === "profile" ? "active" : ""
-              }`}
-              onClick={onNavigateProfile}
-              title="Ver mi perfil"
+              className="nav-button profile-dropdown-button"
+              onClick={toggleDropdown}
+              title="Menú de usuario"
             >
               <span className="profile-avatar">
                 {user?.nombre.charAt(0).toUpperCase()}
               </span>
-              <span className="profile-text">Mi Perfil</span>
+              <span className="profile-text">{user?.nombre}</span>
+              <FontAwesomeIcon 
+                icon={faChevronDown} 
+                className={`dropdown-arrow ${isDropdownOpen ? 'open' : ''}`}
+              />
             </button>
-            <button className="nav-button logout-button" onClick={handleLogout}>
-              🚪 Salir
-            </button>
+            {isDropdownOpen && (
+              <div className="profile-dropdown">
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    onNavigateProfile?.();
+                  }}
+                >
+                  <FontAwesomeIcon icon={faUser} className="dropdown-icon" />
+                  Perfil
+                </button>
+                <button
+                  className="dropdown-item"
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  <FontAwesomeIcon icon={faRightFromBracket} className="dropdown-icon" />
+                  Cerrar sesión
+                </button>
+              </div>
+            )}
           </div>
         </nav>
       </div>
