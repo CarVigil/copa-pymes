@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePermissions } from "../../hooks/usePermissions";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faChevronDown, faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
+import { faUser, faChevronDown, faRightFromBracket, faHome, faUsers, faTrophy, faShirt, faClock, faEye } from "@fortawesome/free-solid-svg-icons";
 import "./Header.css";
 
 interface HeaderProps {
@@ -59,74 +59,86 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="header-container">
         <h1 className="header-title">{title}</h1>
         <nav className="header-nav">
-          <button
-            className={`nav-button ${currentPage === "home" ? "active" : ""}`}
-            onClick={onNavigateHome}
-          >
-            Inicio
-          </button>
-          
-          {/* Solo mostrar si tiene permiso para ver jugadores */}
-          {canView('jugadores') && (
+          <div className="nav-buttons">
             <button
-              className={`nav-button ${
-                currentPage === "jugadores" ? "active" : ""
-              }`}
-              onClick={onNavigateJugadores}
+              className={`nav-button ${currentPage === "home" ? "active" : ""}`}
+              onClick={onNavigateHome}
+              title="Ir al inicio"
             >
-              Jugadores
+              <FontAwesomeIcon icon={faHome} className="nav-icon" />
+              <span>Inicio</span>
             </button>
-          )}
-          
-          {/* Solo mostrar si tiene permiso para ver torneos */}
-          {canView('torneos') && (
-            <button
-              className={`nav-button ${
-                currentPage === "torneos" ? "active" : ""
-              }`}
-              onClick={onNavigateTorneos}
-            >
-              Torneos
-            </button>
-          )}
-          
-          {/* Solo mostrar si tiene permiso para ver equipos */}
-          {canView('equipos') && (
-            <button
-              className={`nav-button ${
-                currentPage === "equipos" ? "active" : ""
-              }`}
-              onClick={onNavigateEquipos}
-            >
-              Equipos
-            </button>
-          )}
-          
-          {/* Solo mostrar si tiene permiso para ver partidos */}
-          {canView('partidos') && (
-            <button className="nav-button">
-              Partidos
-            </button>
-          )}
-          
-          {/* Solo mostrar si tiene permiso para ver resultados */}
-          {canView('resultados') && (
-            <button className="nav-button">
-              Resultados
-            </button>
-          )}
+            
+            {/* Solo mostrar si tiene permiso para ver jugadores */}
+            {canView('jugadores') && (
+              <button
+                className={`nav-button ${
+                  currentPage === "jugadores" ? "active" : ""
+                }`}
+                onClick={onNavigateJugadores}
+                title="Ver jugadores"
+              >
+                <FontAwesomeIcon icon={faUsers} className="nav-icon" />
+                <span>Jugadores</span>
+              </button>
+            )}
+            
+            {/* Solo mostrar si tiene permiso para ver torneos */}
+            {canView('torneos') && (
+              <button
+                className={`nav-button ${
+                  currentPage === "torneos" ? "active" : ""
+                }`}
+                onClick={onNavigateTorneos}
+                title="Ver torneos"
+              >
+                <FontAwesomeIcon icon={faTrophy} className="nav-icon" />
+                <span>Torneos</span>
+              </button>
+            )}
+            
+            {/* Solo mostrar si tiene permiso para ver equipos */}
+            {canView('equipos') && (
+              <button
+                className={`nav-button ${
+                  currentPage === "equipos" ? "active" : ""
+                }`}
+                onClick={onNavigateEquipos}
+                title="Ver equipos"
+              >
+                <FontAwesomeIcon icon={faShirt} className="nav-icon" />
+                <span>Equipos</span>
+              </button>
+            )}
+            
+            {/* Solo mostrar si tiene permiso para ver partidos */}
+            {canView('partidos') && (
+              <button className="nav-button" title="Ver partidos">
+                <FontAwesomeIcon icon={faClock} className="nav-icon" />
+                <span>Partidos</span>
+              </button>
+            )}
+            
+            {/* Solo mostrar si tiene permiso para ver resultados */}
+            {canView('resultados') && (
+              <button className="nav-button" title="Ver resultados">
+                <FontAwesomeIcon icon={faEye} className="nav-icon" />
+                <span>Resultados</span>
+              </button>
+            )}
+          </div>
           
           {/* Información del usuario y dropdown */}
           <div className="user-section" ref={dropdownRef}>
             <button
-              className="nav-button profile-dropdown-button"
+              className="profile-dropdown-button"
               onClick={toggleDropdown}
               title="Menú de usuario"
             >
               <span className="profile-avatar">
                 {user?.nombre.charAt(0).toUpperCase()}
               </span>
-              <span className="profile-text">{user?.nombre}</span>
+              <span className="profile-name">{user?.nombre}</span>
               <FontAwesomeIcon 
                 icon={faChevronDown} 
                 className={`dropdown-arrow ${isDropdownOpen ? 'open' : ''}`}
