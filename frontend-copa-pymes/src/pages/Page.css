@@ -112,7 +112,6 @@
   border: none;
   font-size: 1.2rem;
   cursor: pointer;
-  padding: 0.5rem;
   margin: 0 0.25rem;
   border-radius: var(--radius);
   transition: all 0.2s ease;

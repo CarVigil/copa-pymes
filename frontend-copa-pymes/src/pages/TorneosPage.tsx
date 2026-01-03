@@ -248,7 +248,7 @@ export const TorneosPage: React.FC = () => {
                           onClick={() => handleEliminarTorneo(torneo.id)}
                           title="Eliminar"
                         >
-                          �️
+                          🗑️
                         </button>
                       </ProtectedAction>
                     </td>
