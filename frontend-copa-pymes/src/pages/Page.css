@@ -206,7 +206,7 @@
 }
 
 .table td {
-  padding: 1rem;
+  padding: 0.6rem;
   border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
 }
