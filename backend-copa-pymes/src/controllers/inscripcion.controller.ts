@@ -158,10 +158,10 @@ export class InscripcionController {
       const torneoId = req.params.id; // Obtener torneoId de params
       const { equipoId, divisionId } = req.body;
 
-      if (!torneoId || !equipoId || !divisionId) {
+      if (!torneoId || !equipoId) {
         return res.status(400).json({
           success: false,
-          message: "equipoId y divisionId son requeridos",
+          message: "equipoId es requerido",
         });
       }
 
@@ -175,19 +175,35 @@ export class InscripcionController {
           throw new Error("Torneo no encontrado");
         }
 
+        let division: Division | undefined;
+        if (torneo.tipo === "todos_contra_todos") {
+          if (!divisionId) {
+            throw new Error("divisionId es requerido para torneos todos contra todos");
+          }
+
+          const divisionEncontrada = await em.findOne(Division, {
+            id: parseInt(divisionId),
+            torneo: parseInt(torneoId),
+          });
+          if (!divisionEncontrada) {
+            throw new Error("División no encontrada para el torneo");
+          }
+          division = divisionEncontrada;
+        } else if (divisionId) {
+          const divisionEncontrada = await em.findOne(Division, {
+            id: parseInt(divisionId),
+            torneo: parseInt(torneoId),
+          });
+          if (!divisionEncontrada) {
+            throw new Error("División no encontrada para el torneo");
+          }
+          division = divisionEncontrada;
+        }
+
         // Verificar que el equipo existe
         const equipo = await em.findOne(Equipo, { id: parseInt(equipoId) });
         if (!equipo) {
           throw new Error("Equipo no encontrado");
-        }
-
-        // Verificar que la division existe y pertenece al torneo
-        const division = await em.findOne(Division, {
-          id: parseInt(divisionId),
-          torneo: parseInt(torneoId),
-        });
-        if (!division) {
-          throw new Error("División no encontrada para el torneo");
         }
 
         // Contar jugadores del equipo
@@ -219,7 +235,9 @@ export class InscripcionController {
         const inscripcion = new Inscripcion();
         inscripcion.torneo = torneo;
         inscripcion.equipo = equipo;
-        inscripcion.division = division;
+        if (division) {
+          inscripcion.division = division;
+        }
         inscripcion.estado = "aceptada";
         inscripcion.fechaInscripcion = new Date();
 
@@ -551,3 +569,4 @@ export class InscripcionController {
     }
   }
 }
+
