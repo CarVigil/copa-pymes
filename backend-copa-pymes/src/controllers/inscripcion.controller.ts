@@ -4,6 +4,7 @@ import { Inscripcion } from "../models/inscripcion.model";
 import { Torneo } from "../models/torneo.model";
 import { Equipo } from "../models/equipo.model";
 import { Partido } from "../models/partido.model";
+import { Division } from "../models/division.model";
 import { SqlEntityManager } from "@mikro-orm/mysql";
 
 // Función auxiliar para reintentar operaciones con base de datos
@@ -155,12 +156,12 @@ export class InscripcionController {
   static async create(req: Request, res: Response) {
     try {
       const torneoId = req.params.id; // Obtener torneoId de params
-      const { equipoId } = req.body;
+      const { equipoId, divisionId } = req.body;
 
-      if (!torneoId || !equipoId) {
+      if (!torneoId || !equipoId || !divisionId) {
         return res.status(400).json({
           success: false,
-          message: "equipoId es requerido",
+          message: "equipoId y divisionId son requeridos",
         });
       }
 
@@ -178,6 +179,15 @@ export class InscripcionController {
         const equipo = await em.findOne(Equipo, { id: parseInt(equipoId) });
         if (!equipo) {
           throw new Error("Equipo no encontrado");
+        }
+
+        // Verificar que la division existe y pertenece al torneo
+        const division = await em.findOne(Division, {
+          id: parseInt(divisionId),
+          torneo: parseInt(torneoId),
+        });
+        if (!division) {
+          throw new Error("División no encontrada para el torneo");
         }
 
         // Contar jugadores del equipo
@@ -209,6 +219,7 @@ export class InscripcionController {
         const inscripcion = new Inscripcion();
         inscripcion.torneo = torneo;
         inscripcion.equipo = equipo;
+        inscripcion.division = division;
         inscripcion.estado = "aceptada";
         inscripcion.fechaInscripcion = new Date();
 
@@ -241,7 +252,7 @@ export class InscripcionController {
         }
         
         // Retornar con equipo populado
-        await em.populate(inscripcion, ["equipo", "torneo"]);
+        await em.populate(inscripcion, ["equipo", "torneo", "division"]);
         
         return { inscripcion, llaveGenerada, totalEquipos };
       });
@@ -278,7 +289,7 @@ export class InscripcionController {
         if (torneoId) filtro.torneo = parseInt(torneoId as string);
         if (equipoId) filtro.equipo = parseInt(equipoId as string);
 
-        return await em.find(Inscripcion, filtro, { populate: ["torneo", "equipo"] });
+        return await em.find(Inscripcion, filtro, { populate: ["torneo", "equipo", "division"] });
       });
 
       res.status(200).json({ success: true, data: result });
@@ -357,13 +368,14 @@ export class InscripcionController {
         const inscripciones = await em.find(
           Inscripcion,
           { torneo: parseInt(id) },
-          { populate: ["equipo"] }
+          { populate: ["equipo", "division"] }
         );
 
         return inscripciones.map((insc) => ({
           ...insc.equipo,
           inscripcionId: insc.id,
           fechaInscripcion: insc.fechaInscripcion,
+          division: insc.division,
         }));
       });
 

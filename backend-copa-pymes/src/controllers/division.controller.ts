@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { getORM, checkConnection } from "../shared/db/mikro-orm.config";
 import { Division } from "../models/division.model";
+import { Torneo } from "../models/torneo.model";
 
 // Función auxiliar para reintentar operaciones con base de datos
 const retryDatabaseOperation = async <T>(
@@ -57,7 +58,7 @@ export class DivisionController {
       const result = await retryDatabaseOperation(async () => {
         const orm = getORM();
         const em = orm.em.fork();
-        const divisiones = await em.findAll(Division);
+        const divisiones = await em.findAll(Division, { populate: ["torneo"] });
         return divisiones;
       });
 
@@ -84,7 +85,7 @@ export class DivisionController {
       const orm = getORM();
       const em = orm.em.fork();
 
-      const division = await em.findOne(Division, { id: parseInt(id) });
+      const division = await em.findOne(Division, { id: parseInt(id) }, { populate: ["torneo"] });
 
       if (!division) {
         res.status(404).json({
@@ -113,14 +114,14 @@ export class DivisionController {
   // Crear nueva division
   static async create(req: Request, res: Response): Promise<void> {
     try {
-      const { nombre, cupo } = req.body;
+      const { nombre, cupo, torneoId } = req.body;
 
       // Validaciones básicas
-      if (!nombre || !cupo) {
+      if (!nombre || !cupo || !torneoId) {
         res.status(400).json({
           success: false,
           data: null,
-          message: "Todos los campos son obligatorios",
+          message: "nombre, cupo y torneoId son obligatorios",
         });
         return;
       }
@@ -129,7 +130,18 @@ export class DivisionController {
       const em = orm.em.fork();
 
       // Verificar si ya existe una división con el mismo nombre
+      const torneo = await em.findOne(Torneo, { id: parseInt(torneoId) });
+      if (!torneo) {
+        res.status(404).json({
+          success: false,
+          data: null,
+          message: "Torneo no encontrado",
+        });
+        return;
+      }
+
       const existingDivision = await em.findOne(Division, {
+        torneo: parseInt(torneoId),
         $or: [{ nombre }],
       });
 
@@ -154,6 +166,7 @@ export class DivisionController {
       const division = new Division();
       division.nombre = nombre;
       division.cupo = cupo;
+      division.torneo = torneo;
 
       await em.persistAndFlush(division);
 
@@ -176,7 +189,7 @@ export class DivisionController {
   static async update(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { nombre, cupo } = req.body;
+      const { nombre, cupo, torneoId } = req.body;
 
       const orm = getORM();
       const em = orm.em.fork();
@@ -200,8 +213,9 @@ export class DivisionController {
         }
 
         if (conditions.length > 0) {
+          const torneoFiltro = torneoId !== undefined ? parseInt(torneoId) : division.torneo?.id;
           const existingDivision = await em.findOne(Division, {
-            $and: [{ id: { $ne: parseInt(id) } }, { $or: conditions }],
+            $and: [{ id: { $ne: parseInt(id) } }, { torneo: torneoFiltro }, { $or: conditions }],
           });
 
           if (existingDivision) {
@@ -218,6 +232,18 @@ export class DivisionController {
       // Actualizar campos
       if (nombre) division.nombre = nombre;
       if (cupo) division.cupo = cupo;
+      if (torneoId !== undefined) {
+        const torneo = await em.findOne(Torneo, { id: parseInt(torneoId) });
+        if (!torneo) {
+          res.status(404).json({
+            success: false,
+            data: null,
+            message: "Torneo no encontrado",
+          });
+          return;
+        }
+        division.torneo = torneo;
+      }
 
       await em.persistAndFlush(division);
 

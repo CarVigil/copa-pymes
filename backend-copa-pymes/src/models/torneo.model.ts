@@ -1,8 +1,9 @@
 import { BaseModel } from "../shared/db/baseModel.model";
-import { Entity, ManyToMany, Property } from "@mikro-orm/core";
+import { Entity, Property } from "@mikro-orm/core";
 import { Collection } from "@mikro-orm/core";
 import { Inscripcion } from "./inscripcion.model";
 import { OneToMany } from "@mikro-orm/core";
+import { Division } from "./division.model";
 
 @Entity()
 export class Torneo extends BaseModel {
@@ -32,4 +33,7 @@ export class Torneo extends BaseModel {
 
   @OneToMany(() => Inscripcion, inscripcion => inscripcion.torneo)
   inscripciones = new Collection<Inscripcion>(this);
+
+  @OneToMany(() => Division, division => division.torneo)
+  divisiones = new Collection<Division>(this);
 }
