@@ -8,18 +8,30 @@ import ModalAgregarEquipoTorneo from '../components/modals/ModalAgregarEquipoTor
 import { ModalEditarResultado } from '../components/modals/ModalEditarResultado';
 import { usePermissions } from '../hooks/usePermissions';
 
+interface DivisionInfo {
+  id?: number;
+  nombre?: string;
+}
+
+interface EquipoInscripto extends Equipo {
+  inscripcionId?: number;
+  fechaInscripcion?: Date | string;
+  division?: DivisionInfo | null;
+}
+
 const TorneoDetallePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { canEdit } = usePermissions();
   const [torneo, setTorneo] = useState<Torneo | null>(null);
-  const [equipos, setEquipos] = useState<Equipo[]>([]);
+  const [equipos, setEquipos] = useState<EquipoInscripto[]>([]);
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [partidoSeleccionado, setPartidoSeleccionado] = useState<Partido | null>(null);
   const [showResultadoModal, setShowResultadoModal] = useState(false);
+  const [removiendoInscripcionId, setRemoviendoInscripcionId] = useState<number | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -91,6 +103,33 @@ const TorneoDetallePage: React.FC = () => {
     }
     
     await fetchTorneoYEquipos();
+  };
+
+  const handleDarDeBajaEquipo = async (inscripcionId?: number, nombreEquipo?: string) => {
+    if (!inscripcionId) {
+      setError('No se pudo identificar la inscripcion del equipo.');
+      return;
+    }
+
+    const confirmar = window.confirm(
+      `¿Dar de baja a ${nombreEquipo || 'este equipo'} del torneo?`
+    );
+    if (!confirmar) return;
+
+    try {
+      setRemoviendoInscripcionId(inscripcionId);
+      setError(null);
+      const response = await torneosService.darDeBajaEquipoDelTorneo(inscripcionId);
+      if (!response.success) {
+        throw new Error(response.message || 'No se pudo dar de baja el equipo');
+      }
+      await fetchTorneoYEquipos();
+    } catch (err: any) {
+      console.error('Error al dar de baja equipo:', err);
+      setError(err.response?.data?.message || err.message || 'Error al dar de baja el equipo');
+    } finally {
+      setRemoviendoInscripcionId(null);
+    }
   };
 
   const handleClickPartido = (partido: Partido) => {
@@ -174,6 +213,24 @@ const TorneoDetallePage: React.FC = () => {
         <h1>{torneo.nombre}</h1>
       </div>
 
+      <div className="actions-bar">
+        <button
+          onClick={() => setShowModal(true)}
+          className="btn btn-primary"
+          disabled={equipos.length >= cantidadConfigurada}
+        >
+          {equipos.length >= cantidadConfigurada ? 'Máximo de equipos alcanzado' : '+ Inscribir Equipo'}
+        </button>
+        {canEdit('torneos') && torneoCompleto && partidos.length === 0 && (
+          <button
+            onClick={handleGenerarLlave}
+            className="btn btn-success"
+          >
+            🏆 Generar Llave de Partidos
+          </button>
+        )}
+      </div>
+
       <div className="torneo-info-card">
         <div className="info-row">
           <span className="info-label">Tipo:</span>
@@ -216,24 +273,6 @@ const TorneoDetallePage: React.FC = () => {
         </div>
       </div>
 
-      <div className="actions-bar">
-        <button
-          onClick={() => setShowModal(true)}
-          className="btn btn-primary"
-          disabled={equipos.length >= cantidadConfigurada}
-        >
-          {equipos.length >= cantidadConfigurada ? 'Máximo de equipos alcanzado' : '+ Agregar Equipo'}
-        </button>
-        {canEdit('torneos') && torneoCompleto && partidos.length === 0 && (
-          <button
-            onClick={handleGenerarLlave}
-            className="btn btn-success"
-          >
-            🏆 Generar Llave de Partidos
-          </button>
-        )}
-      </div>
-
       {!torneoCompleto ? (
         <div className="warning-message">
           ⚠️ Se necesitan {cantidadConfigurada - equipos.length} equipo(s) más para alcanzar {cantidadConfigurada} equipos y generar la llave
@@ -247,7 +286,43 @@ const TorneoDetallePage: React.FC = () => {
           ℹ️ Haz clic en "🏆 Generar Llave de Partidos" para crear los enfrentamientos.
         </div>
       )}
-
+      <div className="equipos-inscritos-card">
+        <h2>Equipos inscriptos ({equipos.length})</h2>
+        {equipos.length === 0 ? (
+          <p className="equipos-empty">Todavia no hay equipos inscriptos en este torneo.</p>
+        ) : (
+          <div className="equipos-list">
+            {equipos.map((equipo) => (
+              <div key={equipo.inscripcionId || equipo.id} className="equipo-item">
+                <div className="equipo-main">
+                  <span className="equipo-nombre">{equipo.nombre}</span>
+                  {equipo.sigla && <span className="equipo-sigla">({equipo.sigla})</span>}
+                </div>
+                <div className="equipo-meta">
+                  {equipo.division?.nombre && (
+                    <span className="equipo-badge">Division: {equipo.division.nombre}</span>
+                  )}
+                  {equipo.fechaInscripcion && (
+                    <span className="equipo-fecha">
+                      Inscripto: {new Date(equipo.fechaInscripcion).toLocaleDateString('es-ES')}
+                    </span>
+                  )}
+                  {canEdit('torneos') && (
+                    <button
+                      type="button"
+                      className="btn-baja-equipo"
+                      disabled={!equipo.inscripcionId || removiendoInscripcionId === equipo.inscripcionId}
+                      onClick={() => handleDarDeBajaEquipo(equipo.inscripcionId, equipo.nombre)}
+                    >
+                      {removiendoInscripcionId === equipo.inscripcionId ? 'Dando de baja...' : 'Dar de baja'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       {partidos.length > 0 ? (
         <div className="bracket-container">
           <h2 className="bracket-title">Llave del Torneo</h2>
@@ -447,3 +522,4 @@ const TorneoDetallePage: React.FC = () => {
 };
 
 export default TorneoDetallePage;
+

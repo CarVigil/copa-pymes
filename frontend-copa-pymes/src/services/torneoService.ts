@@ -45,6 +45,12 @@ export const torneosService = {
     return response.data;
   },
 
+  // Dar de baja equipo inscrito (elimina la inscripcion)
+  darDeBajaEquipoDelTorneo: async (inscripcionId: number): Promise<ApiResponse<any>> => {
+    const response = await apiClient.delete<ApiResponse<any>>(`/inscripciones/${inscripcionId}`);
+    return response.data;
+  },
+
   // Generar llave de partidos manualmente
   generarLlave: async (torneoId: number): Promise<ApiResponse<any>> => {
     const response = await apiClient.post<ApiResponse<any>>(`/torneos/${torneoId}/generar-llave`);
