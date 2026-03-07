@@ -192,16 +192,31 @@ export const ModalEditarTorneo: React.FC<ModalEditarTorneoProps> = ({
 
             <div className="form-group">
               <label htmlFor="cantidad_equipos">Cantidad de Equipos *</label>
-              <input
-                type="number"
-                id="cantidad_equipos"
-                name="cantidad_equipos"
-                value={formData.cantidad_equipos || ""}
-                onChange={handleChange}
-                placeholder="Ej: 10"
-                min={1}
-                disabled={isLoading}
-              />
+              {formData.tipo === "eliminatorio" ? (
+                <select
+                  id="cantidad_equipos"
+                  name="cantidad_equipos"
+                  value={formData.cantidad_equipos || ""}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                >
+                  <option value="">Seleccionar cantidad</option>
+                  <option value="4">4 equipos</option>
+                  <option value="8">8 equipos</option>
+                  <option value="16">16 equipos</option>
+                </select>
+              ) : (
+                <input
+                  type="number"
+                  id="cantidad_equipos"
+                  name="cantidad_equipos"
+                  value={formData.cantidad_equipos || ""}
+                  onChange={handleChange}
+                  placeholder="Ej: 10"
+                  min={2}
+                  disabled={isLoading}
+                />
+              )}
             </div>
           </div>
 

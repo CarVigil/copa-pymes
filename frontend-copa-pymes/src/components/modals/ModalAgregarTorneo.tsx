@@ -205,7 +205,7 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
                   value={formData.cantidad_equipos || ""}
                   onChange={handleChange}
                   placeholder="Ej: 10"
-                  min={1}
+                  min={2}
                   disabled={isLoading}
                 />
               )}

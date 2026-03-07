@@ -19,7 +19,7 @@ const retryDatabaseOperation = async <T>(
       return await operation();
     } catch (error: any) {
       console.error(
-        `❌ Intento ${attempt}/${maxRetries} falló:`,
+        `Intento ${attempt}/${maxRetries} falló:`,
         error.message
       );
 
@@ -32,7 +32,7 @@ const retryDatabaseOperation = async <T>(
         error.message.includes("connect") ||
         error.message.includes("timeout")
       ) {
-        console.log(`⏳ Reintentando en ${delay}ms...`);
+        console.log(`Reintentando en ${delay}ms...`);
         await new Promise((resolve) => setTimeout(resolve, delay));
         delay *= 1.5;
         continue;
@@ -47,6 +47,16 @@ const retryDatabaseOperation = async <T>(
 };
 
 export class TorneoController {
+  private static readonly MODALIDADES_VALIDAS = ["futbol5", "futbol8", "futbol11"];
+  private static readonly TIPOS_VALIDOS = ["eliminatorio", "todos_contra_todos"];
+  private static readonly ESTADOS_VALIDOS = [
+    "pendiente",
+    "inscripciones_abiertas",
+    "activo",
+    "finalizado",
+  ];
+  private static readonly EQUIPOS_ELIMINATORIO_VALIDOS = [4, 8, 16];
+
   constructor(private readonly em: EntityManager) {}
   // Obtener todos los torneos
   static async getAll(req: Request, res: Response): Promise<void> {
@@ -121,10 +131,6 @@ export class TorneoController {
         estado,
       } = req.body;
 
-      const modalidadesValidas = ["futbol5", "futbol8", "futbol11"];
-      const tiposValidos = ["eliminatorio", "todos_contra_todos"];
-      const estadosValidos = ["pendiente", "en_progreso", "finalizado"];
-
       if (
         !nombre ||
         !tipo ||
@@ -141,33 +147,55 @@ export class TorneoController {
         return;
       }
 
-      if (!modalidadesValidas.includes(modalidad)) {
+      if (!TorneoController.MODALIDADES_VALIDAS.includes(modalidad)) {
         res.status(400).json({
           success: false,
           data: null,
-          message: `Modalidad inválida. Debe ser una de: ${modalidadesValidas.join(
+          message: `Modalidad inválida. Debe ser una de: ${TorneoController.MODALIDADES_VALIDAS.join(
             ", "
           )}`,
         });
         return;
       }
 
-      if (!tiposValidos.includes(tipo)) {
+      if (!TorneoController.TIPOS_VALIDOS.includes(tipo)) {
         res.status(400).json({
           success: false,
           data: null,
-          message: `Tipo inválido. Debe ser uno de: ${tiposValidos.join(", ")}`,
+          message: `Tipo inválido. Debe ser uno de: ${TorneoController.TIPOS_VALIDOS.join(", ")}`,
         });
         return;
       }
 
-      if (estado && !estadosValidos.includes(estado)) {
+      if (estado && !TorneoController.ESTADOS_VALIDOS.includes(estado)) {
         res.status(400).json({
           success: false,
           data: null,
-          message: `Estado inválido. Debe ser uno de: ${estadosValidos.join(
+          message: `Estado inválido. Debe ser uno de: ${TorneoController.ESTADOS_VALIDOS.join(
             ", "
           )}`,
+        });
+        return;
+      }
+
+      if (
+        tipo === "eliminatorio" &&
+        !TorneoController.EQUIPOS_ELIMINATORIO_VALIDOS.includes(cantidad_equipos)
+      ) {
+        res.status(400).json({
+          success: false,
+          data: null,
+          message: `Para torneos eliminatorios, la cantidad de equipos debe ser una de: ${TorneoController.EQUIPOS_ELIMINATORIO_VALIDOS.join(", ")}`,
+        });
+        return;
+      }
+
+      if (tipo === "todos_contra_todos" && cantidad_equipos < 2) {
+        res.status(400).json({
+          success: false,
+          data: null,
+          message:
+            "Para torneos todos contra todos, la cantidad de equipos debe ser al menos 2",
         });
         return;
       }
@@ -235,15 +263,6 @@ export class TorneoController {
         estado,
       } = req.body;
 
-      const modalidadesValidas = ["futbol5", "futbol8", "futbol11"];
-      const tiposValidos = ["eliminatorio", "todos_contra_todos"];
-      const estadosValidos = [
-        "pendiente",
-        "inscripciones_abiertas",
-        "activo",
-        "finalizado",
-      ];
-
       const result = await retryDatabaseOperation(async () => {
         const orm = getORM();
         const em = orm.em.fork();
@@ -252,8 +271,8 @@ export class TorneoController {
         if (!torneo) throw new Error("Torneo no encontrado");
 
         if (nombre) torneo.nombre = nombre;
-        if (tipo && tiposValidos.includes(tipo)) torneo.tipo = tipo;
-        if (modalidad && modalidadesValidas.includes(modalidad))
+        if (tipo && TorneoController.TIPOS_VALIDOS.includes(tipo)) torneo.tipo = tipo;
+        if (modalidad && TorneoController.MODALIDADES_VALIDAS.includes(modalidad))
           torneo.modalidad = modalidad;
         if (fecha_inicio) torneo.fecha_inicio = new Date(fecha_inicio);
         if (fecha_fin) torneo.fecha_fin = new Date(fecha_fin);
@@ -261,10 +280,34 @@ export class TorneoController {
           torneo.cantidad_divisiones = cantidad_divisiones;
         if (cantidad_equipos !== undefined)
           torneo.cantidad_equipos = cantidad_equipos;
-        if (estado && estadosValidos.includes(estado)) {
+        if (estado && TorneoController.ESTADOS_VALIDOS.includes(estado)) {
           torneo.estado = estado;
         } else if (estado) {
           console.warn(`Estado no válido recibido: ${estado}`);
+        }
+
+        const tipoFinal = tipo || torneo.tipo;
+        const cantidadEquiposFinal =
+          cantidad_equipos !== undefined ? cantidad_equipos : torneo.cantidad_equipos;
+
+        if (
+          tipoFinal === "eliminatorio" &&
+          cantidadEquiposFinal !== undefined &&
+          !TorneoController.EQUIPOS_ELIMINATORIO_VALIDOS.includes(cantidadEquiposFinal)
+        ) {
+          throw new Error(
+            `Para torneos eliminatorios, la cantidad de equipos debe ser una de: ${TorneoController.EQUIPOS_ELIMINATORIO_VALIDOS.join(", ")}`
+          );
+        }
+
+        if (
+          tipoFinal === "todos_contra_todos" &&
+          cantidadEquiposFinal !== undefined &&
+          cantidadEquiposFinal < 2
+        ) {
+          throw new Error(
+            "Para torneos todos contra todos, la cantidad de equipos debe ser al menos 2"
+          );
         }
 
         await em.persistAndFlush(torneo);

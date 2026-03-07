@@ -178,6 +178,7 @@ export const TorneosPage: React.FC = () => {
                     ? new Date(torneoEnEdicion.fecha_fin)
                     : torneoEnEdicion.fecha_fin,
                 estado: torneoEnEdicion.estado as
+                  | "pendiente"
                   | "inscripciones_abiertas"
                   | "activo"
                   | "finalizado"
@@ -260,7 +261,7 @@ export const TorneosPage: React.FC = () => {
         </>
       ) : (
         <div className="empty-state">
-          <h3>📋 No hay torneos registrados</h3>
+          <h3>No hay torneos registrados</h3>
           <p>Comienza agregando tu primer torneo al sistema</p>
         </div>
       )}
