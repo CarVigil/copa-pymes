@@ -8,6 +8,7 @@ interface ModalAgregarEquipoProps {
   onSubmit: (equipo: Partial<Equipo>) => Promise<void>;
   isLoading?: boolean;
   equipo?: Equipo | null;
+  errorMessage?: string;
 }
 
 export const ModalAgregarEquipo: React.FC<ModalAgregarEquipoProps> = ({
@@ -16,6 +17,7 @@ export const ModalAgregarEquipo: React.FC<ModalAgregarEquipoProps> = ({
   onSubmit,
   isLoading,
   equipo,
+  errorMessage,
 }) => {
   const [formData, setFormData] = useState<Partial<Equipo>>({
     nombre: '',
@@ -84,6 +86,7 @@ export const ModalAgregarEquipo: React.FC<ModalAgregarEquipoProps> = ({
         </div>
 
         <form className="modal-form" onSubmit={handleSubmit}>
+          {errorMessage && <div className="form-error">{errorMessage}</div>}
           <div className="form-group">
             <label htmlFor="nombre">Nombre</label>
             <input 
