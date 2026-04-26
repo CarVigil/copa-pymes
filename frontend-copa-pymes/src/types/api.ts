@@ -28,11 +28,18 @@ export interface Jugador {
   updatedAt?: Date;
 }
 
+export interface CronogramaPartido {
+  fase: string;
+  numeroPartido: number;
+  fecha: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
   count?: number;
+  cronograma?: CronogramaPartido[];
 }
 
 export interface CreateJugadorRequest {

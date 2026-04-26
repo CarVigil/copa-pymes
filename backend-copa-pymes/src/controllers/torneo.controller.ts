@@ -5,6 +5,7 @@ import { Equipo } from '../models/equipo.model';
 import { Partido } from '../models/partido.model';
 import { EntityManager } from '@mikro-orm/mysql';
 import { SqlEntityManager } from '@mikro-orm/mysql';
+import { generarCronogramaTentativo } from '../services/cronograma.service';
 
 // Función auxiliar para reintentar operaciones con base de datos
 const retryDatabaseOperation = async <T>(
@@ -59,6 +60,18 @@ export class TorneoController {
 
   constructor(private readonly em: EntityManager) {}
   // Obtener todos los torneos
+  private static attachCronograma(torneo: Torneo) {
+    const cronograma = generarCronogramaTentativo(torneo).map((partido) => ({
+      ...partido,
+      fecha: partido.fecha.toISOString(),
+    }));
+
+    return {
+      ...torneo,
+      cronograma,
+    };
+  }
+
   static async getAll(req: Request, res: Response): Promise<void> {
     try {
       const result = await retryDatabaseOperation(async () => {
@@ -67,9 +80,13 @@ export class TorneoController {
         return await em.find(Torneo, {});
       });
 
+      const responseData = result.map((torneo) =>
+        TorneoController.attachCronograma(torneo)
+      );
+
       res.status(200).json({
         success: true,
-        data: result,
+        data: responseData,
         message: "Torneos obtenidos exitosamente",
       });
     } catch (error) {
@@ -104,7 +121,7 @@ export class TorneoController {
 
       res.status(200).json({
         success: true,
-        data: result,
+        data: TorneoController.attachCronograma(result),
         message: "Torneo obtenido exitosamente",
       });
     } catch (error) {
@@ -223,9 +240,12 @@ export class TorneoController {
         return torneo;
       });
 
+      const torneoConCronograma = TorneoController.attachCronograma(result);
+
       res.status(201).json({
         success: true,
-        data: result,
+        data: torneoConCronograma,
+        cronograma: torneoConCronograma.cronograma,
         message: "Torneo creado exitosamente",
       });
     } catch (error: any) {

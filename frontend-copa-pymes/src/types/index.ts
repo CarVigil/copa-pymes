@@ -1,3 +1,5 @@
+import { CronogramaPartido } from './api';
+
 export * from './api';
 export interface Torneo {
   id: number;
@@ -9,6 +11,7 @@ export interface Torneo {
   cantidad_divisiones?: number;
   cantidad_equipos?: number;
   estado: 'pendiente' | 'inscripciones_abiertas' | 'activo' | 'finalizado';
+  cronograma?: CronogramaPartido[];
 }
 
 export interface CreateTorneoRequest {
