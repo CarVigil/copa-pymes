@@ -144,6 +144,70 @@
   gap: 0.75rem;
 }
 
+.cronograma-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.cronograma-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1rem;
+}
+
+.cronograma-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #1e2330;
+}
+
+.cronograma-count {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.cronograma-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cronograma-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #f8f9fb;
+  gap: 1rem;
+}
+
+.cronograma-item div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cronograma-date {
+  font-weight: 600;
+  color: #1b3a61;
+}
+
+.cronograma-fase {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.cronograma-match {
+  font-weight: 600;
+  color: #2f5fa7;
+}
+
 .equipo-item {
   border: 1px solid #e9ecef;
   border-radius: 8px;

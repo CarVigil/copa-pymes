@@ -311,7 +311,7 @@
   transform: translateY(0);
 }
 
-.btn:disabled {
+.profile-container .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -413,11 +413,11 @@
 }
 
 /* Loading state */
-.btn:disabled {
+.profile-container .btn:disabled {
   position: relative;
 }
 
-.btn:disabled::after {
+.profile-container .btn:disabled::after {
   content: "";
   position: absolute;
   width: 16px;

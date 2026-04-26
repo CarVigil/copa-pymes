@@ -245,3 +245,24 @@ input#estado {
   object-fit: contain;
   border-radius: 4px;
 }
+
+.link-button {
+  background: none;
+  border: none;
+  color: #1e88e5;
+  font-size: 0.92rem;
+  padding: 0;
+  margin-top: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.link-button:hover:not(:disabled) {
+  color: #1565c0;
+}
+
+.link-button:disabled {
+  color: #90caf9;
+  cursor: not-allowed;
+}
