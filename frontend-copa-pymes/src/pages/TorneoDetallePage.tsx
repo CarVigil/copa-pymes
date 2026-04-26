@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { torneosService } from '../services/torneoService';
 import { partidoService } from '../services/partidoService';
-import { Torneo, Equipo, Partido } from '../types';
+import { CronogramaPartido, Torneo, Equipo, Partido } from '../types';
 import './TorneoDetallePage.css';
 import ModalAgregarEquipoTorneo from '../components/modals/ModalAgregarEquipoTorneo';
 import { ModalEditarResultado } from '../components/modals/ModalEditarResultado';
@@ -139,9 +139,47 @@ const TorneoDetallePage: React.FC = () => {
     }
   };
 
+  const getEstadoBadgeClass = (estado: Torneo['estado']) => {
+    switch (estado) {
+      case 'pendiente':
+        return 'badge-pending';
+      case 'inscripciones_abiertas':
+        return 'badge-info';
+      case 'activo':
+        return 'badge-success';
+      case 'finalizado':
+        return 'badge-danger';
+      default:
+        return 'badge-pending';
+    }
+  };
+
+  const getEstadoLabel = (estado: Torneo['estado']) => estado.replace(/_/g, ' ');
+
+  const formatCronogramaDate = (fecha?: string) => {
+    if (!fecha) return 'Fecha no definida';
+    return new Date(fecha).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const getCronogramaFaseLabel = (fase?: string) =>
+    fase === 'todos_contra_todos'
+      ? 'Todos contra todos'
+      : fase
+          ? fase
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, (char) => char.toUpperCase())
+          : 'Fase desconocida';
+
   // Usar la cantidad de equipos configurada en el torneo (no calcular hitos)
   const cantidadConfigurada = torneo?.cantidad_equipos || 16;
   const torneoCompleto = equipos.length === cantidadConfigurada;
+  const derivedEstado: Torneo['estado'] = torneo?.estado || 'pendiente';
+  const inscripcionesAbiertas = derivedEstado !== 'pendiente' && derivedEstado !== 'finalizado';
+  const cronograma: CronogramaPartido[] = torneo?.cronograma || [];
 
   // Organizar partidos por fase
   const partidosOctavos = partidos.filter(p => p.fase === 'octavos').sort((a, b) => (a.numeroPartido || 0) - (b.numeroPartido || 0));
@@ -217,9 +255,13 @@ const TorneoDetallePage: React.FC = () => {
         <button
           onClick={() => setShowModal(true)}
           className="btn btn-primary"
-          disabled={equipos.length >= cantidadConfigurada}
+          disabled={!inscripcionesAbiertas || equipos.length >= cantidadConfigurada}
         >
-          {equipos.length >= cantidadConfigurada ? 'Máximo de equipos alcanzado' : '+ Inscribir Equipo'}
+          {!inscripcionesAbiertas
+            ? 'Inscripciones no abiertas'
+            : equipos.length >= cantidadConfigurada
+              ? 'Máximo de equipos alcanzado'
+              : '+ Inscribir Equipo'}
         </button>
         {canEdit('torneos') && torneoCompleto && partidos.length === 0 && (
           <button
@@ -230,99 +272,135 @@ const TorneoDetallePage: React.FC = () => {
           </button>
         )}
       </div>
+      <div className="torneo-resumen-grid">
+        <div className="torneo-resumen-left">
+          <div className="torneo-info-card">
+            <div className="info-row">
+              <span className="info-label">Tipo:</span>
+              <span className="info-value">{torneo.tipo}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Modalidad:</span>
+              <span className="info-value">{torneo.modalidad}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Fecha Inicio:</span>
+              <span className="info-value">
+                {new Date(torneo.fecha_inicio).toLocaleDateString('es-ES', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                })}
+              </span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Fecha Fin:</span>
+              <span className="info-value">
+                {new Date(torneo.fecha_fin).toLocaleDateString('es-ES', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                })}
+              </span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Estado:</span>
+              <span className={`badge ${getEstadoBadgeClass(torneo.estado)}`}>
+                {getEstadoLabel(torneo.estado)}
+              </span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Equipos inscritos:</span>
+              <span className={`info-value ${torneoCompleto ? 'complete' : 'incomplete'}`}>
+                {equipos.length} / {cantidadConfigurada}
+                {torneoCompleto ? ' ✓ Completo' : ` (faltan ${cantidadConfigurada - equipos.length} para generar llave)`}
+              </span>
+            </div>
+          </div>
+        </div>
 
-      <div className="torneo-info-card">
-        <div className="info-row">
-          <span className="info-label">Tipo:</span>
-          <span className="info-value">{torneo.tipo}</span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">Modalidad:</span>
-          <span className="info-value">{torneo.modalidad}</span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">Fecha Inicio:</span>
-          <span className="info-value">
-            {new Date(torneo.fecha_inicio).toLocaleDateString('es-ES', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            })}
-          </span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">Fecha Fin:</span>
-          <span className="info-value">
-            {new Date(torneo.fecha_fin).toLocaleDateString('es-ES', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            })}
-          </span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">Estado:</span>
-          <span className={`info-value badge badge-${torneo.estado}`}>{torneo.estado}</span>
-        </div>
-        <div className="info-row">
-          <span className="info-label">Equipos inscritos:</span>
-          <span className={`info-value ${torneoCompleto ? 'complete' : 'incomplete'}`}>
-            {equipos.length} / {cantidadConfigurada}
-            {torneoCompleto ? ' ✓ Completo' : ` (faltan ${cantidadConfigurada - equipos.length} para generar llave)`}
-          </span>
+        <div className="torneo-resumen-right">
+          {!torneoCompleto ? (
+            <div className="warning-message">
+              ⚠️ Se necesitan {cantidadConfigurada - equipos.length} equipo(s) más para alcanzar {cantidadConfigurada} equipos y generar la llave
+            </div>
+          ) : (
+            <div className="success-message">✅ Llave de torneo lista - {equipos.length} equipos inscritos</div>
+          )}
+
+          {torneoCompleto && partidos.length === 0 && (
+            <div className="info-message">
+              ℹ️ Haz clic en "🏆 Generar Llave de Partidos" para crear los enfrentamientos.
+            </div>
+          )}
+
+          <div className="equipos-inscritos-card">
+            <h2>Equipos inscriptos ({equipos.length})</h2>
+            {equipos.length === 0 ? (
+              <p className="equipos-empty">Todavia no hay equipos inscriptos en este torneo.</p>
+            ) : (
+              <div className="equipos-list">
+                {equipos.map((equipo) => (
+                  <div key={equipo.inscripcionId || equipo.id} className="equipo-item">
+                    <div className="equipo-main">
+                      <span className="equipo-nombre">{equipo.nombre}</span>
+                      {equipo.sigla && <span className="equipo-sigla">({equipo.sigla})</span>}
+                    </div>
+                    <div className="equipo-meta">
+                      {equipo.division?.nombre && (
+                        <span className="equipo-badge">Division: {equipo.division.nombre}</span>
+                      )}
+                      {equipo.fechaInscripcion && (
+                        <span className="equipo-fecha">
+                          Inscripto: {new Date(equipo.fechaInscripcion).toLocaleDateString('es-ES')}
+                        </span>
+                      )}
+                      {canEdit('torneos') && (
+                        <button
+                          type="button"
+                          className="btn-baja-equipo"
+                          disabled={!equipo.inscripcionId || removiendoInscripcionId === equipo.inscripcionId}
+                          onClick={() => handleDarDeBajaEquipo(equipo.inscripcionId, equipo.nombre)}
+                        >
+                          {removiendoInscripcionId === equipo.inscripcionId ? 'Dando de baja...' : 'Dar de baja'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {!torneoCompleto ? (
-        <div className="warning-message">
-          ⚠️ Se necesitan {cantidadConfigurada - equipos.length} equipo(s) más para alcanzar {cantidadConfigurada} equipos y generar la llave
-        </div>
-      ) : (
-        <div className="success-message">✅ Llave de torneo lista - {equipos.length} equipos inscritos</div>
-      )}
-
-      {torneoCompleto && partidos.length === 0 && (
-        <div className="info-message">
-          ℹ️ Haz clic en "🏆 Generar Llave de Partidos" para crear los enfrentamientos.
-        </div>
-      )}
-      <div className="equipos-inscritos-card">
-        <h2>Equipos inscriptos ({equipos.length})</h2>
-        {equipos.length === 0 ? (
-          <p className="equipos-empty">Todavia no hay equipos inscriptos en este torneo.</p>
-        ) : (
-          <div className="equipos-list">
-            {equipos.map((equipo) => (
-              <div key={equipo.inscripcionId || equipo.id} className="equipo-item">
-                <div className="equipo-main">
-                  <span className="equipo-nombre">{equipo.nombre}</span>
-                  {equipo.sigla && <span className="equipo-sigla">({equipo.sigla})</span>}
+      {cronograma.length > 0 && (
+        <div className="cronograma-card">
+          <div className="cronograma-header">
+            <h2>Cronograma tentativo</h2>
+            <span className="cronograma-count">
+              {cronograma.length} partido{cronograma.length !== 1 && 's'}
+            </span>
+          </div>
+          <div className="cronograma-list">
+            {cronograma.map((partido, index) => (
+              <div
+                key={`${partido.fase}-${partido.numeroPartido}-${index}`}
+                className="cronograma-item"
+              >
+                <div>
+                  <span className="cronograma-date">
+                    {formatCronogramaDate(partido.fecha)}
+                  </span>
+                  <span className="cronograma-fase">
+                    {getCronogramaFaseLabel(partido.fase)}
+                  </span>
                 </div>
-                <div className="equipo-meta">
-                  {equipo.division?.nombre && (
-                    <span className="equipo-badge">Division: {equipo.division.nombre}</span>
-                  )}
-                  {equipo.fechaInscripcion && (
-                    <span className="equipo-fecha">
-                      Inscripto: {new Date(equipo.fechaInscripcion).toLocaleDateString('es-ES')}
-                    </span>
-                  )}
-                  {canEdit('torneos') && (
-                    <button
-                      type="button"
-                      className="btn-baja-equipo"
-                      disabled={!equipo.inscripcionId || removiendoInscripcionId === equipo.inscripcionId}
-                      onClick={() => handleDarDeBajaEquipo(equipo.inscripcionId, equipo.nombre)}
-                    >
-                      {removiendoInscripcionId === equipo.inscripcionId ? 'Dando de baja...' : 'Dar de baja'}
-                    </button>
-                  )}
-                </div>
+                <span className="cronograma-match">Partido {partido.numeroPartido}</span>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
       {partidos.length > 0 ? (
         <div className="bracket-container">
           <h2 className="bracket-title">Llave del Torneo</h2>
@@ -522,4 +600,5 @@ const TorneoDetallePage: React.FC = () => {
 };
 
 export default TorneoDetallePage;
+
 
