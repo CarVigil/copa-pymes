@@ -11,6 +11,7 @@ import premioRoutes from './routes/premio.routes';
 import authRoutes from './routes/auth.routes';
 import inscripcionRoutes from './routes/inscripcion.routes';
 import partidosRoutes from './routes/partido.routes';
+import { startTorneoEstadoScheduler, stopTorneoEstadoScheduler } from './services/torneoEstadoScheduler';
 
 const app = express();
 const PORT = 3000;
@@ -78,6 +79,7 @@ app.use('/api/partidos', partidosRoutes);
 
 // Función para cerrar conexiones de base de datos
 const closeDatabase = async () => {
+  stopTorneoEstadoScheduler();
   try {
     const orm = getORM();
     console.log('🔄 Cerrando conexiones de base de datos...');
@@ -142,6 +144,7 @@ const init = async () => {
         console.log(`📊 Base de datos: MySQL (Local)`);
         console.log('💡 Presiona Ctrl+C para cerrar el servidor');
       });
+      startTorneoEstadoScheduler();
 
       // Manejar cierre del servidor
       const gracefulShutdown = async () => {
