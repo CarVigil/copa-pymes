@@ -16,6 +16,17 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
   onSubmit,
   isLoading,
 }) => {
+  const formatDateInputValue = (date: Date | string | undefined) => {
+    if (!date) return "";
+
+    const parsedDate = new Date(date);
+    const year = parsedDate.getFullYear();
+    const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
+    const day = String(parsedDate.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState<CreateTorneoRequest>({
     nombre: "",
     tipo: "",
@@ -38,6 +49,11 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
     // Convertir a número si es cantidad
     if (name === "cantidad_divisiones" || name === "cantidad_equipos") {
       newValue = value === "" ? undefined : parseInt(value, 10);
+    }
+
+    // Convertir la fecha seleccionada a Date local para evitar corrimientos por zona horaria
+    if (name === "fecha_inicio" || name === "fecha_fin") {
+      newValue = value ? new Date(`${value}T12:00:00`) : new Date();
     }
 
     // Resetear divisiones si cambia el tipo
@@ -216,16 +232,10 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
             <div className="form-group">
               <label htmlFor="fecha_inicio">Fecha de Inicio *</label>
               <input
-                type="datetime-local"
+                type="date"
                 id="fecha_inicio"
                 name="fecha_inicio"
-                value={
-                  formData.fecha_inicio
-                    ? new Date(formData.fecha_inicio)
-                        .toISOString()
-                        .slice(0, 16)
-                    : ""
-                }
+                value={formatDateInputValue(formData.fecha_inicio)}
                 onChange={handleChange}
                 disabled={isLoading}
               />
@@ -234,16 +244,10 @@ export const ModalAgregarTorneo: React.FC<ModalAgregarTorneoProps> = ({
             <div className="form-group">
               <label htmlFor="fecha_fin">Fecha de Fin *</label>
               <input
-                type="datetime-local"
+                type="date"
                 id="fecha_fin"
                 name="fecha_fin"
-                value={
-                  formData.fecha_fin
-                    ? new Date(formData.fecha_fin)
-                        .toISOString()
-                        .slice(0, 16)
-                    : ""
-                }
+                value={formatDateInputValue(formData.fecha_fin)}
                 onChange={handleChange}
                 disabled={isLoading}
               />
