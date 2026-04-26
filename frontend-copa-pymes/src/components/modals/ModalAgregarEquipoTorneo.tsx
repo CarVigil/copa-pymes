@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { torneosService } from '../../services/torneoService';
+import { equipoService } from '../../services/equipoService';
+import { Equipo, CreateEquipoRequest } from '../../types';
+import { ModalAgregarEquipo } from './ModalAgregarEquipo';
 
 interface ModalAgregarEquipoTorneoProps {
   torneoId: number;
@@ -24,6 +27,9 @@ const ModalAgregarEquipoTorneo: React.FC<ModalAgregarEquipoTorneoProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showCrearEquipoModal, setShowCrearEquipoModal] = useState(false);
+  const [isCreandoEquipo, setIsCreandoEquipo] = useState(false);
+  const [crearEquipoError, setCrearEquipoError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEquiposDisponibles();
@@ -74,13 +80,54 @@ const ModalAgregarEquipoTorneo: React.FC<ModalAgregarEquipoTorneoProps> = ({
     }
   };
 
+  const abrirCrearEquipo = () => {
+    setCrearEquipoError(null);
+    setShowCrearEquipoModal(true);
+  };
+
+  const cerrarCrearEquipo = () => {
+    setCrearEquipoError(null);
+    setShowCrearEquipoModal(false);
+  };
+
+  const handleCrearEquipo = async (data: Partial<Equipo>) => {
+    setCrearEquipoError(null);
+    setIsCreandoEquipo(true);
+    setError(null);
+    try {
+      const payload: CreateEquipoRequest = {
+        nombre: data.nombre?.trim() || '',
+        sigla: data.sigla?.trim() || '',
+        estado: typeof data.estado === 'boolean' ? data.estado : true,
+        escudo: data.escudo,
+      };
+      const response = await equipoService.createEquipo(payload);
+      if (!response.success || !response.data) {
+        throw new Error(response.message || 'Error al crear el equipo');
+      }
+      await fetchEquiposDisponibles();
+      if (response.data.id) {
+        setEquipoSeleccionado(response.data.id);
+      }
+      cerrarCrearEquipo();
+    } catch (err: any) {
+      const mensaje = err.response?.data?.message || err.message || 'Error al crear el equipo';
+      setCrearEquipoError(mensaje);
+      setError(mensaje);
+      throw err;
+    } finally {
+      setIsCreandoEquipo(false);
+    }
+  };
+
   const equiposValidos = equiposDisponibles.filter(e => e.cumpleRequisito);
   const equiposInvalidos = equiposDisponibles.filter(e => !e.cumpleRequisito);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <h2>Agregar Equipo al Torneo</h2>
+    <div>
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <h2>Agregar Equipo al Torneo</h2>
 
         {loading && <p className="loading-text">Cargando...</p>}
 
@@ -123,25 +170,26 @@ const ModalAgregarEquipoTorneo: React.FC<ModalAgregarEquipoTorneoProps> = ({
                 </>
               )}
 
-              {equiposInvalidos.length > 0 && (
-                <>
-                  <label className="section-label warning-label">
-                    Equipos con menos de 14 jugadores ({equiposInvalidos.length})
-                  </label>
-                  <select disabled className="form-control disabled-select">
-                    <option value="">-- No disponibles --</option>
-                    {equiposInvalidos.map((equipo) => (
-                      <option key={equipo.id} value={equipo.id}>
-                        {equipo.nombre} ({equipo.jugadoresCount} jugadores) ✗
-                      </option>
-                    ))}
-                  </select>
-                  <small className="warning-text">
-                    ⚠️ Estos equipos necesitan al menos 14 jugadores para participar
-                  </small>
-                </>
-              )}
-            </div>
+            {equiposInvalidos.length > 0 && (
+              <div>
+                <p className="section-label warning-label">
+                  Tenés {equiposInvalidos.length} Equipos con menos de 14 jugadores
+                </p>
+                <small className="warning-text">
+                  ⚠️ Los equipos necesitan al menos 14 jugadores para participar
+                </small>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="link-button"
+            onClick={abrirCrearEquipo}
+            disabled={loading || isCreandoEquipo}
+          >
+            {isCreandoEquipo ? 'Creando equipo...' : 'Crear un equipo nuevo'}
+          </button>
 
             <div className="modal-actions">
               <button
@@ -162,6 +210,14 @@ const ModalAgregarEquipoTorneo: React.FC<ModalAgregarEquipoTorneoProps> = ({
             </div>
           </form>
         )}
+      </div>
+      <ModalAgregarEquipo
+        isOpen={showCrearEquipoModal}
+        onClose={cerrarCrearEquipo}
+        onSubmit={handleCrearEquipo}
+        isLoading={isCreandoEquipo}
+        errorMessage={crearEquipoError ?? undefined}
+      />
       </div>
     </div>
   );
